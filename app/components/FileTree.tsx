@@ -144,7 +144,7 @@ export default function FileTree({ onFileSelect }: FileTreeProps) {
     );
   };
 
-  const renderNode = (node: FileNode, depth: number = 0): JSX.Element => {
+  const renderNode = (node: FileNode, depth: number = 0) => {
     const isSelected = selectedId === node.id;
     
     return (

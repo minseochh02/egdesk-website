@@ -120,7 +120,11 @@ export default function AIChat({ serverKey, serverName }: AIChatProps) {
     ];
 
     try {
-      let conversationHistory = [{ role: 'user', content: message }];
+      let conversationHistory: Array<{
+        role: string;
+        content: string;
+        toolCalls?: any[];
+      }> = [{ role: 'user', content: message }];
       let allToolCalls: any[] = [];
       let maxIterations = 5; // Prevent infinite loops
       let finalContent = '';
