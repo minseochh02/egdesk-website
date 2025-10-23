@@ -57,6 +57,13 @@ export function useMCPTools(serverKey: string) {
       const mcpResponse = data.result || data;
       
       if (mcpResponse.content && Array.isArray(mcpResponse.content) && mcpResponse.content[0]?.text) {
+        // Special handling for download responses (they contain base64 data)
+        if (mcpResponse.content[0].text.includes('File downloaded:')) {
+          console.log('✅ Download response detected');
+          // For download responses, return the raw content without trying to parse as JSON
+          return mcpResponse;
+        }
+        
         try {
           const parsedResult = JSON.parse(mcpResponse.content[0].text);
           console.log('✅ Parsed Result:', parsedResult);

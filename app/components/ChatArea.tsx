@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import FileTree from './FileTree';
 import ServerList from './ServerList';
 import DirectoryTree from './DirectoryTree';
+import AIChat from './AIChat';
 import { useAuth } from '@/contexts/AuthContext';
 import AuthButton from './AuthButton';
 
@@ -27,6 +28,7 @@ export default function ChatArea({ tabId }: ChatAreaProps) {
   const [showFileTree, setShowFileTree] = useState(true);
   const [selectedServer, setSelectedServer] = useState<string | null>(null);
   const [selectedServerName, setSelectedServerName] = useState<string>('');
+  const [activeView, setActiveView] = useState<'chat' | 'ai'>('chat');
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -155,7 +157,28 @@ export default function ChatArea({ tabId }: ChatAreaProps) {
         {/* Toolbar */}
         <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-700">
           <div className="flex items-center gap-3">
-            <h2 className="text-sm font-medium text-zinc-300">Chat</h2>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setActiveView('chat')}
+                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                  activeView === 'chat' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                Chat
+              </button>
+              <button
+                onClick={() => setActiveView('ai')}
+                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                  activeView === 'ai' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                AI Assistant
+              </button>
+            </div>
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${
                 connectionStatus === 'connected' ? 'bg-green-500' : 
@@ -186,7 +209,22 @@ export default function ChatArea({ tabId }: ChatAreaProps) {
         </div>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
+        {activeView === 'ai' && selectedServer ? (
+          <AIChat serverKey={selectedServer} serverName={selectedServerName} />
+        ) : activeView === 'ai' ? (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center text-zinc-500">
+              <div className="w-16 h-16 mx-auto mb-4 bg-zinc-800 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium mb-2">Select a Server</h3>
+              <p className="text-sm">Choose an MCP server from the right panel to start using AI Assistant</p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
         {messages.map((message) => (
           <div
             key={message.id}
@@ -247,9 +285,11 @@ export default function ChatArea({ tabId }: ChatAreaProps) {
 
         <div ref={messagesEndRef} />
         </div>
+        )}
 
         {/* Input Area */}
-        <div className="border-t border-zinc-700 bg-zinc-800 p-4">
+        {activeView === 'chat' && (
+          <div className="border-t border-zinc-700 bg-zinc-800 p-4">
         <div className="flex gap-2 items-end">
           <div className="flex-1 bg-zinc-700 rounded-2xl px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 transition-all">
             <textarea
@@ -310,6 +350,7 @@ export default function ChatArea({ tabId }: ChatAreaProps) {
           </span>
         </div>
         </div>
+        )}
       </div>
 
       {/* Right Side Panel */}
