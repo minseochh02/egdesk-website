@@ -36,7 +36,9 @@ export default function DirectoryTree({ serverKey, serverName }: DirectoryTreePr
     setError(null);
     
     try {
-      const result = await listDirectory('/');
+      console.log('📂 Loading root directory: /Users/minseocha');
+      const result = await listDirectory('/Users/minseocha');
+      console.log('📂 Result:', result);
       
       if (result.content && Array.isArray(result.content)) {
         const items: FileItem[] = result.content.map((item: any) => ({

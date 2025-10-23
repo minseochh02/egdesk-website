@@ -24,27 +24,51 @@ export function useMCPTools(serverKey: string) {
     setError(null);
 
     try {
-      const response = await fetch(`${TUNNEL_SERVICE_URL}/t/${serverKey}/tools/call`, {
+      // Call the file system tools endpoint
+      const response = await fetch(`${TUNNEL_SERVICE_URL}/t/${serverKey}/filesystem/tools/call`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          method: 'tools/call',
-          params: {
-            name: toolName,
-            arguments: args,
-          },
+          tool: toolName,
+          arguments: args,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        throw new Error(errorData.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
+      
+      // Check for error response
+      if (!data.success && data.error) {
+        throw new Error(data.error);
+      }
+      
+      // Parse MCP protocol response format
+      // Tunnel service wraps MCP response: { success: true, result: { content: [...] } }
+      console.log('🔍 MCP Raw Response:', JSON.stringify(data, null, 2));
+      
+      // Check for tunnel service wrapper
+      const mcpResponse = data.result || data;
+      
+      if (mcpResponse.content && Array.isArray(mcpResponse.content) && mcpResponse.content[0]?.text) {
+        try {
+          const parsedResult = JSON.parse(mcpResponse.content[0].text);
+          console.log('✅ Parsed Result:', parsedResult);
+          return { content: parsedResult };
+        } catch (e) {
+          console.error('❌ Failed to parse MCP response:', e);
+          // If parsing fails, return the text as-is
+          return { content: mcpResponse.content[0].text };
+        }
+      }
+      
+      console.log('⚠️ Returning data as-is');
       return data;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';

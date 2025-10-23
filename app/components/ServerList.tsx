@@ -1,6 +1,7 @@
 'use client';
 
 import { useUserServers } from '@/hooks/useUserServers';
+import { useServerHealth } from '@/hooks/useServerHealth';
 import { Server, RefreshCw, Shield, Clock, Ban, CheckCircle } from 'lucide-react';
 
 interface ServerListProps {
@@ -10,6 +11,9 @@ interface ServerListProps {
 
 export default function ServerList({ onServerSelect, selectedServer }: ServerListProps) {
   const { servers, loading, error, refresh } = useUserServers();
+  const { healthStatus, checking, refresh: refreshHealth } = useServerHealth(
+    servers.map(s => s.server_key)
+  );
 
   if (loading) {
     return (
@@ -91,11 +95,15 @@ export default function ServerList({ onServerSelect, selectedServer }: ServerLis
             Available Servers
           </h3>
           <button
-            onClick={refresh}
-            className="p-1 rounded hover:bg-zinc-700 transition-colors"
+            onClick={() => {
+              refresh();
+              refreshHealth();
+            }}
+            disabled={loading || checking}
+            className="p-1 rounded hover:bg-zinc-700 transition-colors disabled:opacity-50"
             title="Refresh servers"
           >
-            <RefreshCw className="w-4 h-4 text-zinc-400 hover:text-white" />
+            <RefreshCw className={`w-4 h-4 text-zinc-400 hover:text-white ${(loading || checking) ? 'animate-spin' : ''}`} />
           </button>
         </div>
         <p className="text-xs text-zinc-500">{servers.length} server{servers.length !== 1 ? 's' : ''} accessible</p>
@@ -146,10 +154,21 @@ export default function ServerList({ onServerSelect, selectedServer }: ServerLis
                 }`}>
                   {server.permission_status}
                 </span>
-                {server.status === 'active' && (
-                  <div className="flex items-center gap-1 text-xs text-zinc-500">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-                    online
+                {healthStatus[server.server_key] && (
+                  <div className="flex items-center gap-1 text-xs">
+                    {healthStatus[server.server_key].online ? (
+                      <>
+                        <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                        <span className="text-green-400">online</span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-1.5 h-1.5 rounded-full bg-gray-500"></div>
+                        <span className="text-gray-500" title={healthStatus[server.server_key].error}>
+                          offline
+                        </span>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
