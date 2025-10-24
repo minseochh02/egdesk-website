@@ -10,7 +10,7 @@ interface MCPToolCall {
   arguments: Record<string, any>;
 }
 
-export function useMCPTools(serverKey: string) {
+export function useMCPTools(serverKey: string, serviceName: string = 'filesystem') {
   const { session } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,8 +24,8 @@ export function useMCPTools(serverKey: string) {
     setError(null);
 
     try {
-      // Call the file system tools endpoint
-      const response = await fetch(`${TUNNEL_SERVICE_URL}/t/${serverKey}/filesystem/tools/call`, {
+      // Call the MCP service tools endpoint (dynamic service name)
+      const response = await fetch(`${TUNNEL_SERVICE_URL}/t/${serverKey}/${serviceName}/tools/call`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -57,21 +57,25 @@ export function useMCPTools(serverKey: string) {
       const mcpResponse = data.result || data;
       
       if (mcpResponse.content && Array.isArray(mcpResponse.content) && mcpResponse.content[0]?.text) {
-        // Special handling for download responses (they contain base64 data)
-        if (mcpResponse.content[0].text.includes('File downloaded:')) {
-          console.log('✅ Download response detected');
-          // For download responses, return the raw content without trying to parse as JSON
+        const responseText = mcpResponse.content[0].text;
+        
+        // Special handling for responses that are plain text (not JSON)
+        if (responseText.includes('File downloaded:') || 
+            responseText.includes('File uploaded successfully') ||
+            responseText.includes('successfully')) {
+          console.log('✅ Plain text response detected:', responseText.substring(0, 100));
+          // Return the raw MCP response structure
           return mcpResponse;
         }
         
         try {
-          const parsedResult = JSON.parse(mcpResponse.content[0].text);
-          console.log('✅ Parsed Result:', parsedResult);
+          const parsedResult = JSON.parse(responseText);
+          console.log('✅ Parsed JSON Result:', parsedResult);
           return { content: parsedResult };
         } catch (e) {
-          console.error('❌ Failed to parse MCP response:', e);
-          // If parsing fails, return the text as-is
-          return { content: mcpResponse.content[0].text };
+          console.log('⚠️ Not JSON, returning text as-is:', responseText.substring(0, 100));
+          // If parsing fails, return the text as-is in MCP format
+          return mcpResponse;
         }
       }
       
