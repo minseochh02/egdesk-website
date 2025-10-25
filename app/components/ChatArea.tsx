@@ -131,10 +131,13 @@ export default function ChatArea({ tabId }: ChatAreaProps) {
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'error'>('disconnected');
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const [contextMessageCount, setContextMessageCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCounterRef = useRef(0);
   const attachedFilesRef = useRef<UploadedFile[]>([]);
+  // Maintain conversation history for context across messages
+  const conversationHistoryRef = useRef<Array<{ role: string; content: string; }>>([]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -157,6 +160,10 @@ export default function ChatArea({ tabId }: ChatAreaProps) {
       timestamp: new Date(),
     }]);
     setConnectionStatus(user && selectedServer ? 'connected' : user ? 'disconnected' : 'disconnected');
+    
+    // Reset conversation history when server changes
+    conversationHistoryRef.current = [];
+    setContextMessageCount(0);
     
     // Expand the server list when no server is selected
     if (!selectedServer) {
@@ -190,12 +197,12 @@ export default function ChatArea({ tabId }: ChatAreaProps) {
       // Build file information for AI (but don't upload yet)
       let fileInfo = '';
       if (currentFiles.length > 0) {
-        const fileDescriptions = currentFiles.map(file => {
+        const fileDescriptions = currentFiles.map((file, idx) => {
           const fileType = file.file.type.startsWith('image/') ? 'Image' : 'File';
           const fileSize = (file.file.size / 1024).toFixed(2);
-          return `- ${fileType}: "${file.file.name}" (${fileSize} KB, type: ${file.file.type})`;
+          return `  ${idx + 1}. "${file.file.name}" - ${fileType}, ${fileSize} KB (${file.file.type})`;
         });
-        fileInfo = `\n\n[User has attached ${currentFiles.length} file(s) to this message:]\n${fileDescriptions.join('\n')}\n[Note: Files are ready to be uploaded if needed. Use fs_upload_file to save them.]`;
+        fileInfo = `\n\n[ATTACHED FILES - ${currentFiles.length} file(s) ready for processing:]\n${fileDescriptions.join('\n')}\n\n[CONTEXT: When user says "this file", "the file", "upload it", "save it", they are referring to the attached file(s) above. Use fs_upload_file to save them to the server, or use conversion tools if they ask to convert them.]`;
       }
 
       // Process with AI - include file info
@@ -275,42 +282,42 @@ export default function ChatArea({ tabId }: ChatAreaProps) {
       availableTools.push(
         {
           name: 'fs_search_files',
-          description: 'Search for files matching a pattern (supports regex)',
+          description: '🔍 PRIMARY TOOL for finding files! When user says "download X" or "read Y", use this FIRST (don\'t ask for path!). Searches the entire filesystem for files matching a pattern. Returns full paths needed for download/read operations. Use path="/" to search everywhere. Example: User says "download report.xlsx" → immediately call fs_search_files(pattern="report.xlsx", path="/") → get full path → then download.',
           parameters: { 
-            path: 'string',
-            pattern: 'string',
-            searchContent: 'boolean (optional)',
-            maxResults: 'number (optional)'
+            path: 'string (root directory to search from, use "/" for system-wide)',
+            pattern: 'string (filename or pattern to match)',
+            searchContent: 'boolean (optional, search inside file contents)',
+            maxResults: 'number (optional, default 100)'
           },
           service: 'filesystem'
         },
         {
           name: 'fs_list_directory',
-          description: 'List contents of a directory',
+          description: 'List all files and folders in a directory. Use when user wants to see what files are available or browse directories.',
           parameters: { path: 'string' },
           service: 'filesystem'
         },
         {
           name: 'fs_read_file', 
-          description: 'Read contents of a file',
+          description: 'Read and display the contents of a file from the server. Use when user wants to view or examine a file.',
           parameters: { path: 'string' },
           service: 'filesystem'
         },
         {
           name: 'fs_get_file_info',
-          description: 'Get metadata about a file or directory',
+          description: 'Get detailed metadata about a file or directory (size, type, permissions, etc.). Use when user asks about file properties.',
           parameters: { path: 'string' },
           service: 'filesystem'
         },
         {
           name: 'fs_download_file',
-          description: 'Download a file (read as binary/base64)',
+          description: 'Download a file from the server to user\'s local device. Use when user says "download", "get", or "save to my computer". Returns file in base64 format.',
           parameters: { path: 'string' },
           service: 'filesystem'
         },
         {
           name: 'fs_upload_file',
-          description: 'Upload file to Downloads folder',
+          description: 'Upload and save a file to the server\'s Downloads folder. Use when user says "upload", "save", "send this file", or attaches a file asking to save it.',
           parameters: { 
             filename: 'string',
             content: 'string (base64 or utf8)',
@@ -325,10 +332,73 @@ export default function ChatArea({ tabId }: ChatAreaProps) {
       availableTools.map(t => `${t.service}:${t.name}`).join(', '));
 
     try {
-      let conversationHistory: Array<{
-        role: string;
-        content: string;
-      }> = [{ role: 'user', content: message }];
+      // Create a comprehensive system instruction for the AI (only add once if history is empty)
+      const systemInstruction = `ACTION FIRST, TALK SECOND:
+If user message contains "download [filename]" - your response MUST start with a tool call, NOT text.
+
+🚨 MANDATORY PATTERN:
+User: "download image.png"
+Your response: [fs_search_files tool call] (no text before this)
+Then after tool results: "I found X files..." (explanation comes after action)
+
+FORBIDDEN: Starting response with "I can help", "Let me locate", "I need to" etc.
+
+You are an AI assistant that helps users interact with their MCP (Model Context Protocol) server and its services.
+
+AVAILABLE CAPABILITIES:
+${availableTools.map(tool => `- ${tool.name} (${tool.service}): ${tool.description}`).join('\n')}
+
+BEHAVIOR OVERRIDE - CRITICAL:
+If user asks to download/read a file with just a filename:
+1. NEVER ask "where is it?" or "specify directory"  
+2. ALWAYS start with fs_search_files tool call
+3. This overrides all other conversation patterns
+
+IMPORTANT INSTRUCTIONS:
+1. Understand natural language commands and map them to appropriate tool calls
+2. Common user commands and their tool mappings:
+   - "upload this file" / "save this file" → use fs_upload_file
+   - "download [filename]" → FIRST fs_search_files to find it, THEN fs_download_file with full path
+   - "read [filename]" → FIRST fs_search_files to find it, THEN fs_read_file with full path
+   - "convert this file to X" → use file-conversion service tools (if available)
+   - "list files" / "show directory" → use fs_list_directory
+   - "search for X" → use fs_search_files
+
+3. When user says "this file" or "the file", refer to files they have attached to their message
+4. When converting files, use the appropriate conversion tool based on source and target formats
+5. Always provide clear feedback about what actions you're taking
+6. If a file is attached and user asks to upload/save it, use fs_upload_file with the attached file's data
+7. **CRITICAL FOR DOWNLOADS - AUTOMATIC SEARCH REQUIRED**: 
+   - Users will provide INCOMPLETE file names like "download report.xlsx" or "download image.png"
+   - DO NOT ask user for the full path - AUTOMATICALLY search for it!
+   - When user says "download [filename]" or "read [filename]":
+     * IMMEDIATELY use fs_search_files with the filename as pattern
+     * Search in "/" or "~" (user's home directory) to cover all locations
+     * DO NOT ask "where is the file?" - JUST SEARCH!
+   - Only use fs_download_file or fs_read_file AFTER getting the full path from search results
+   - If multiple matches found, list them and ask user which one
+   - If NO matches found, THEN tell user you couldn't find it
+   - Example flow: User says "download report.xlsx" → You immediately call fs_search_files → Then download
+8. Be proactive in chaining operations: ALWAYS search first, then download/read/convert
+9. **CONTEXT AWARENESS**: Maintain context across the conversation
+   - If you asked the user a question (e.g., "which file?"), remember it for their next response
+   - When user says "the 3rd one" or "number 2", refer back to the list you just provided
+   - If user gives a short answer like "yes", "no", "3rd one", interpret it in context of your previous message
+
+Be proactive and helpful in interpreting user intent. If a command is ambiguous, ask for clarification.`;
+
+      // Initialize conversation history with system instruction if empty
+      if (conversationHistoryRef.current.length === 0) {
+        conversationHistoryRef.current.push({ role: 'system', content: systemInstruction });
+        console.log('🆕 Starting new conversation with system instruction');
+        console.log('📋 System instruction preview:', systemInstruction.substring(0, 200) + '...');
+      } else {
+        console.log(`💬 Continuing conversation (${conversationHistoryRef.current.length} messages in history)`);
+      }
+      
+      // Add current user message to conversation history
+      conversationHistoryRef.current.push({ role: 'user', content: message });
+      
       let maxIterations = 5;
       let finalContent = '';
       let allToolCalls: any[] = [];
@@ -340,7 +410,7 @@ export default function ChatArea({ tabId }: ChatAreaProps) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            message: conversationHistory,
+            message: conversationHistoryRef.current,
             context: { availableTools }
           })
         });
@@ -391,27 +461,28 @@ export default function ChatArea({ tabId }: ChatAreaProps) {
                   console.log('🔍 fs_download_file result:', JSON.stringify(result, null, 2));
                   break;
                 case 'fs_upload_file':
-                  // Check if this is an attached file by filename
-                  const attachedFile = attachedFilesRef.current.find(
-                    f => f.file.name === toolCall.args.filename
-                  );
-                  
-                  if (attachedFile && attachedFile.base64) {
-                    // Use the attached file's base64 content
-                    result = await uploadFile(
-                      attachedFile.file.name,
-                      attachedFile.base64,
-                      'base64'
-                    );
-                  } else if (toolCall.args.content) {
+                  // Handle file upload with renaming support
+                  if (toolCall.args.content) {
                     // Use provided content (for other scenarios)
                     result = await uploadFile(
                       toolCall.args.filename,
                       toolCall.args.content,
                       toolCall.args.encoding || 'base64'
                     );
+                  } else if (attachedFilesRef.current.length > 0) {
+                    // Use the first attached file (support renaming)
+                    const attachedFile = attachedFilesRef.current[0];
+                    if (attachedFile && attachedFile.base64) {
+                      result = await uploadFile(
+                        toolCall.args.filename, // Use the AI's specified filename (allows renaming)
+                        attachedFile.base64,
+                        'base64'
+                      );
+                    } else {
+                      result = { error: `Attached file has no content data` };
+                    }
                   } else {
-                    result = { error: `File "${toolCall.args.filename}" not found in attached files and no content provided` };
+                    result = { error: `No attached files found and no content provided` };
                   }
                   break;
                 default:
@@ -469,11 +540,11 @@ export default function ChatArea({ tabId }: ChatAreaProps) {
           console.log('✅ Added to allToolCalls. Total count:', allToolCalls.length);
         }
 
-        conversationHistory.push({
+        conversationHistoryRef.current.push({
           role: 'assistant',
           content: data.content
         });
-        conversationHistory.push({
+        conversationHistoryRef.current.push({
           role: 'tool',
           content: JSON.stringify(executedTools.map(t => ({
             tool: t.name,
@@ -483,6 +554,20 @@ export default function ChatArea({ tabId }: ChatAreaProps) {
       }
 
       console.log('🎬 Final response - allToolCalls:', allToolCalls);
+      
+      // Add final assistant response to conversation history for context continuity
+      // (Only add if not already added in the last iteration)
+      const lastMessage = conversationHistoryRef.current[conversationHistoryRef.current.length - 1];
+      if (lastMessage.role !== 'assistant' || lastMessage.content !== finalContent) {
+        conversationHistoryRef.current.push({
+          role: 'assistant',
+          content: finalContent
+        });
+      }
+      
+      // Update context message count for UI
+      setContextMessageCount(conversationHistoryRef.current.length);
+      
       return { 
         content: finalContent,
         toolCalls: allToolCalls.length > 0 ? allToolCalls : undefined
@@ -684,6 +769,24 @@ export default function ChatArea({ tabId }: ChatAreaProps) {
                  'Not Connected'}
               </span>
             </div>
+            {contextMessageCount > 1 && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-zinc-500">
+                  {contextMessageCount - 1} messages in context
+                </span>
+                <button
+                  onClick={() => {
+                    conversationHistoryRef.current = [];
+                    setContextMessageCount(0);
+                    console.log('🗑️ Conversation context cleared');
+                  }}
+                  className="text-xs text-zinc-400 hover:text-red-400 transition-colors"
+                  title="Clear conversation context"
+                >
+                  Clear
+                </button>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <AuthButton />
