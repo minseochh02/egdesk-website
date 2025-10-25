@@ -96,6 +96,7 @@ export default function ChatArea({ tabId }: ChatAreaProps) {
   const [showFileTree, setShowFileTree] = useState(true);
   const [selectedServer, setSelectedServer] = useState<string | null>(null);
   const [selectedServerName, setSelectedServerName] = useState<string>('');
+  const [isServerListCollapsed, setIsServerListCollapsed] = useState(false);
   
   // MCP Service Discovery
   const { services } = useMCPServices(selectedServer || '');
@@ -156,6 +157,11 @@ export default function ChatArea({ tabId }: ChatAreaProps) {
       timestamp: new Date(),
     }]);
     setConnectionStatus(user && selectedServer ? 'connected' : user ? 'disconnected' : 'disconnected');
+    
+    // Expand the server list when no server is selected
+    if (!selectedServer) {
+      setIsServerListCollapsed(false);
+    }
   }, [user, selectedServer, selectedServerName]);
 
   const handleSend = async () => {
@@ -1049,39 +1055,61 @@ export default function ChatArea({ tabId }: ChatAreaProps) {
       {/* Right Side Panel */}
       {showFileTree && (
         <div className="w-80 flex-shrink-0 border-l border-zinc-700">
-          <div className="h-full flex flex-col">
+          <div className="h-full flex flex-col overflow-y-auto">
             {/* Servers Section */}
-            <div className={selectedServer ? 'h-1/3 border-b border-zinc-700' : 'flex-1'}>
-              <ServerList 
-                selectedServer={selectedServer || undefined}
-                onServerSelect={(serverKey) => {
-                  console.log('Selected server:', serverKey);
-                  // Find the server to get its name
-                  setSelectedServer(serverKey);
-                  setSelectedServerName(serverKey);
-                }}
-              />
-              
-              {/* MCP Services - Display All as Cards */}
-              {selectedServer && services.length > 0 && (
-                <div className="border-t border-zinc-700 p-4">
-                  <h3 className="text-xs font-semibold text-zinc-300 mb-3">
-                    Available MCP Services ({services.length})
-                  </h3>
-                  <div className="space-y-3">
-                    {services.map((service) => (
-                      <MCPServiceCard
-                        key={service.name}
-                        serverName={selectedServerName}
-                        serviceName={service.name}
-                        description={service.description}
-                        serverKey={selectedServer}
-                      />
-                    ))}
+            <div className="flex-shrink-0">
+              {selectedServer && isServerListCollapsed ? (
+                // Collapsed Header - Show selected server with expand button
+                <div 
+                  className="p-3 border-b border-zinc-700 bg-zinc-900 cursor-pointer hover:bg-zinc-800 transition-colors"
+                  onClick={() => setIsServerListCollapsed(false)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs text-zinc-500">Selected Server</div>
+                      <div className="font-semibold text-sm text-zinc-200 truncate">{selectedServerName}</div>
+                    </div>
+                    <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
                   </div>
                 </div>
+              ) : (
+                // Expanded Server List
+                <ServerList 
+                  selectedServer={selectedServer || undefined}
+                  onServerSelect={(serverKey) => {
+                    console.log('Selected server:', serverKey);
+                    setSelectedServer(serverKey);
+                    setSelectedServerName(serverKey);
+                    // Collapse the list when a server is selected and it has services
+                    if (serverKey) {
+                      setIsServerListCollapsed(true);
+                    }
+                  }}
+                />
               )}
             </div>
+              
+            {/* MCP Services - Display All as Cards */}
+            {selectedServer && services.length > 0 && (
+              <div className="flex-1 border-t border-zinc-700 p-4">
+                <h3 className="text-xs font-semibold text-zinc-300 mb-3">
+                  Available MCP Services ({services.length})
+                </h3>
+                <div className="space-y-3">
+                  {services.map((service) => (
+                    <MCPServiceCard
+                      key={service.name}
+                      serverName={selectedServerName}
+                      serviceName={service.name}
+                      description={service.description}
+                      serverKey={selectedServer}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
