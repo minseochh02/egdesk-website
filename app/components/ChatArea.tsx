@@ -205,6 +205,8 @@ export default function ChatArea({ tabId }: ChatAreaProps) {
         timestamp: new Date(),
         toolCalls: response.toolCalls,
       };
+      
+      console.log('💬 Assistant message created with toolCalls:', assistantMessage.toolCalls);
 
       setMessages(prev => [...prev, assistantMessage]);
       setConnectionStatus('connected');
@@ -380,6 +382,7 @@ export default function ChatArea({ tabId }: ChatAreaProps) {
                   break;
                 case 'fs_download_file':
                   result = await downloadFile(toolCall.args.path);
+                  console.log('🔍 fs_download_file result:', JSON.stringify(result, null, 2));
                   break;
                 case 'fs_upload_file':
                   // Check if this is an attached file by filename
@@ -454,8 +457,10 @@ export default function ChatArea({ tabId }: ChatAreaProps) {
         const actionTools = executedTools.filter(t => 
           ['fs_upload_file', 'fs_download_file', 'fs_write_file', 'fs_delete_file'].includes(t.name)
         );
+        console.log('📊 Action tools filtered:', actionTools.length, 'tools:', actionTools.map(t => t.name));
         if (actionTools.length > 0) {
           allToolCalls.push(...actionTools);
+          console.log('✅ Added to allToolCalls. Total count:', allToolCalls.length);
         }
 
         conversationHistory.push({
@@ -471,6 +476,7 @@ export default function ChatArea({ tabId }: ChatAreaProps) {
         });
       }
 
+      console.log('🎬 Final response - allToolCalls:', allToolCalls);
       return { 
         content: finalContent,
         toolCalls: allToolCalls.length > 0 ? allToolCalls : undefined
@@ -772,7 +778,9 @@ export default function ChatArea({ tabId }: ChatAreaProps) {
               {/* Display Tool Call Results */}
               {message.toolCalls && message.toolCalls.length > 0 && (
                 <div className="mt-3 space-y-2">
-                  {message.toolCalls.map((toolCall, idx) => (
+                  {message.toolCalls.map((toolCall, idx) => {
+                    console.log(`🎨 Rendering tool call ${idx}:`, toolCall.name, 'result:', toolCall.result);
+                    return (
                     <div key={idx} className="bg-black/20 rounded-lg p-3 border border-white/10">
                       <div className="flex items-center gap-2 mb-2">
                         <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -787,12 +795,121 @@ export default function ChatArea({ tabId }: ChatAreaProps) {
                            `🔧 ${toolCall.name}`}
                         </span>
                       </div>
-                      {toolCall.result?.content?.[0]?.text && (
+                      
+                      {/* Special handling for file downloads */}
+                      {toolCall.name === 'fs_download_file' && (() => {
+                        try {
+                          console.log('🎯 Download button rendering, toolCall.result:', toolCall.result);
+                          console.log('🎯 Download button rendering, toolCall.args:', toolCall.args);
+                          
+                          // Parse the download result
+                          let fileData: string | undefined;
+                          let fileName: string | undefined;
+                          let mimeType: string | undefined;
+                          
+                          // Check if data is in content[0].data (MCP standard format)
+                          const contentItem = toolCall.result?.content?.[0];
+                          if (contentItem?.data) {
+                            // Direct base64 data in content[0].data
+                            fileData = contentItem.data;
+                            fileName = toolCall.args.path?.split('/').pop() || 'downloaded-file';
+                            
+                            // Try to infer MIME type from filename extension
+                            const ext = fileName?.split('.').pop()?.toLowerCase();
+                            const mimeTypes: Record<string, string> = {
+                              'pdf': 'application/pdf',
+                              'png': 'image/png',
+                              'jpg': 'image/jpeg',
+                              'jpeg': 'image/jpeg',
+                              'gif': 'image/gif',
+                              'txt': 'text/plain',
+                              'json': 'application/json',
+                              'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                              'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                            };
+                            mimeType = (ext && mimeTypes[ext]) || 'application/octet-stream';
+                          } else {
+                            // Fallback: try to parse text as JSON
+                            const resultText = contentItem?.text;
+                            if (resultText) {
+                              try {
+                                const parsed = JSON.parse(resultText);
+                                fileData = parsed.data || parsed.content || parsed.base64;
+                                fileName = parsed.filename || parsed.name || toolCall.args.path?.split('/').pop() || 'downloaded-file';
+                                mimeType = parsed.mimeType || parsed.type || 'application/octet-stream';
+                              } catch {
+                                // Not JSON, might be plain text message
+                                return (
+                                  <p className="text-xs text-zinc-300 font-mono">
+                                    {resultText}
+                                  </p>
+                                );
+                              }
+                            }
+                          }
+                          
+                          if (fileData) {
+                            console.log('✅ Creating download button for:', fileName, 'MIME:', mimeType, 'Data length:', fileData.length);
+                            // Create download button
+                            return (
+                              <button
+                                onClick={() => {
+                                  try {
+                                    // Convert base64 to blob
+                                    const byteCharacters = atob(fileData);
+                                    const byteNumbers = new Array(byteCharacters.length);
+                                    for (let i = 0; i < byteCharacters.length; i++) {
+                                      byteNumbers[i] = byteCharacters.charCodeAt(i);
+                                    }
+                                    const byteArray = new Uint8Array(byteNumbers);
+                                    const blob = new Blob([byteArray], { type: mimeType });
+                                    
+                                    // Create download link
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = fileName || 'downloaded-file';
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    document.body.removeChild(a);
+                                    URL.revokeObjectURL(url);
+                                  } catch (err) {
+                                    console.error('Download failed:', err);
+                                    alert('Failed to download file');
+                                  }
+                                }}
+                                className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-xs font-medium"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                Download {fileName}
+                              </button>
+                            );
+                          }
+                          
+                          // Fallback to text display
+                          return (
+                            <p className="text-xs text-zinc-300">
+                              {JSON.stringify(toolCall.result, null, 2)}
+                            </p>
+                          );
+                        } catch (err) {
+                          return (
+                            <p className="text-xs text-red-300">
+                              Error parsing download result: {err instanceof Error ? err.message : 'Unknown error'}
+                            </p>
+                          );
+                        }
+                      })()}
+                      
+                      {/* Regular result display for other tools */}
+                      {toolCall.name !== 'fs_download_file' && toolCall.result?.content?.[0]?.text && (
                         <p className="text-xs text-zinc-300 font-mono">
                           {toolCall.result.content[0].text}
                         </p>
                       )}
-                      {toolCall.result?.content && !toolCall.result.content[0]?.text && (
+                      {toolCall.name !== 'fs_download_file' && toolCall.result?.content && !toolCall.result.content[0]?.text && (
                         <p className="text-xs text-zinc-300">
                           {typeof toolCall.result.content === 'string' 
                             ? toolCall.result.content 
@@ -800,7 +917,8 @@ export default function ChatArea({ tabId }: ChatAreaProps) {
                         </p>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
