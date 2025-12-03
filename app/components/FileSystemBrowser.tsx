@@ -176,7 +176,7 @@ export default function FileSystemBrowser({
     return <File className="w-4 h-4 text-blue-400 flex-shrink-0" />;
   };
 
-  const renderNode = (node: FileTreeNode, depth: number = 0): JSX.Element => {
+  const renderNode = (node: FileTreeNode, depth: number = 0): React.ReactElement => {
     return (
       <div key={node.path}>
         <div
