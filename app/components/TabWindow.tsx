@@ -1,11 +1,22 @@
 'use client';
 
 import ChatArea from './ChatArea';
+import AppsScriptEditor from './AppsScriptEditor';
+import { MessageSquare, FileCode } from 'lucide-react';
 
-interface Tab {
+export type TabType = 'chat' | 'apps-script-editor';
+
+export interface Tab {
   id: string;
   title: string;
   active: boolean;
+  type: TabType;
+  data?: {
+    projectId?: string;
+    projectName?: string;
+    serverKey?: string;
+    serviceName?: string;
+  };
 }
 
 interface TabWindowProps {
@@ -14,6 +25,7 @@ interface TabWindowProps {
   onTabSwitch: (id: string) => void;
   onTabClose: (id: string) => void;
   onNewTab: () => void;
+  onOpenProject: (projectId: string, projectName: string, serverKey: string, serviceName: string) => void;
 }
 
 export default function TabWindow({ 
@@ -21,7 +33,8 @@ export default function TabWindow({
   activeTab, 
   onTabSwitch, 
   onTabClose,
-  onNewTab 
+  onNewTab,
+  onOpenProject
 }: TabWindowProps) {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -50,19 +63,11 @@ export default function TabWindow({
               
               {/* Tab Content */}
               <div className="relative flex items-center gap-2 flex-1 min-w-0">
-                <svg
-                  className="w-4 h-4 flex-shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                  />
-                </svg>
+                {tab.type === 'apps-script-editor' ? (
+                  <FileCode className="w-4 h-4 flex-shrink-0 text-blue-400" />
+                ) : (
+                  <MessageSquare className="w-4 h-4 flex-shrink-0 text-zinc-400" />
+                )}
                 <span className="truncate text-sm font-medium">{tab.title}</span>
                 
                 {/* Close Button */}
@@ -98,7 +103,7 @@ export default function TabWindow({
         <button
           onClick={onNewTab}
           className="flex items-center justify-center w-8 h-8 mb-1 rounded-lg hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-white"
-          title="New Tab"
+          title="New Chat"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -113,11 +118,22 @@ export default function TabWindow({
             key={tab.id}
             className={`h-full ${tab.id === activeTab ? 'block' : 'hidden'}`}
           >
-            <ChatArea tabId={tab.id} />
+            {tab.type === 'apps-script-editor' && tab.data ? (
+              <AppsScriptEditor
+                projectId={tab.data.projectId!}
+                projectName={tab.data.projectName}
+                serverKey={tab.data.serverKey!}
+                serviceName={tab.data.serviceName}
+              />
+            ) : (
+              <ChatArea 
+                tabId={tab.id} 
+                onOpenProject={onOpenProject}
+              />
+            )}
           </div>
         ))}
       </div>
     </div>
   );
 }
-

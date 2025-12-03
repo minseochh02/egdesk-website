@@ -104,6 +104,22 @@ GMAIL TOOLS:
 - Examples: send_email, list_messages, get_message, create_draft, etc.
 - Check available Gmail tools in the list above
 
+${context?.currentFile ? `
+APPS SCRIPT EDITOR CONTEXT:
+You are helping the user edit an Apps Script project in a code editor.
+- Current Project: ${context?.currentProjectName || context?.currentProject || 'Unknown'}
+- Project ID: ${context?.currentProject || 'Unknown'}
+- Currently Open File: ${context?.currentFile}
+${context?.currentFileContent ? `
+--- CURRENT FILE CONTENT (${context?.currentFile}) ---
+${context?.currentFileContent}
+--- END OF FILE CONTENT ---
+` : '(No content loaded yet)'}
+
+When the user asks about "this code" or "the code", they are referring to the file content shown above.
+You can use apps_script_read_file to read other files, or apps_script_write_file to make changes.
+` : ''}
+
 Response format (JSON):
 {
   "content": "Your helpful response to the user",

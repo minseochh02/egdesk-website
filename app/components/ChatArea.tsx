@@ -1,21 +1,26 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import ServerList from './ServerList';
 import { useAuth } from '@/contexts/AuthContext';
-import AuthButton from './AuthButton';
-import FileUpload, { UploadedFile } from './FileUpload';
+import { UploadedFile } from './FileUpload';
+import FileSystemBrowser from './FileSystemBrowser';
 import { useMCPTools } from '@/hooks/useMCPTools';
 import { useMCPServices } from '@/hooks/useMCPServices';
 import { useMCPServiceTools } from '@/hooks/useMCPServiceTools';
+import { useUserServers } from '@/hooks/useUserServers';
+import { useServerHealth } from '@/hooks/useServerHealth';
+import { Server, RefreshCw, CheckCircle, Clock, Ban } from 'lucide-react';
+import MessageList from './MessageList';
+import ChatInput from './ChatInput';
 
-interface Message {
+export interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
   error?: boolean;
   files?: UploadedFile[];
+  projects?: any[];
   toolCalls?: Array<{
     name: string;
     args: any;
@@ -25,6 +30,7 @@ interface Message {
 
 interface ChatAreaProps {
   tabId: string;
+  onOpenProject?: (projectId: string, projectName: string, serverKey: string, serviceName: string) => void;
 }
 
 interface MCPServiceCardProps {
@@ -36,73 +42,189 @@ interface MCPServiceCardProps {
 
 function MCPServiceCard({ serverName, serviceName, description, serverKey }: MCPServiceCardProps) {
   const { tools, loading } = useMCPServiceTools(serverKey, serviceName);
-  
-  const getServiceIcon = (name: string) => {
-    if (name === 'file-conversion') return '🔄';
-    if (name === 'gmail') return '📧';
-    return '📁';
-  };
 
   return (
-    <div className="bg-zinc-800 border border-zinc-700 rounded-lg overflow-hidden">
-      {/* Card Header */}
-      <div className="bg-zinc-900 p-3 border-b border-zinc-700">
-        <div className="flex items-start gap-2">
-          <span className="text-lg">{getServiceIcon(serviceName)}</span>
-          <div className="flex-1 min-w-0">
-            <div className="text-xs text-zinc-500">MCP Server</div>
-            <div className="font-semibold text-sm text-zinc-200">{serverName}</div>
-            <div className="text-xs text-zinc-500 mt-1">Service Type</div>
-            <div className="font-mono text-xs text-blue-400">{serviceName}</div>
-          </div>
+    <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-3">
+      <div className="flex items-center gap-2">
+        <Server className="w-4 h-4 text-zinc-400 flex-shrink-0" />
+        <div className="flex items-center justify-between flex-1 min-w-0 gap-2">
+          <span className="font-mono text-sm text-blue-400 font-semibold truncate">{serviceName}</span>
+          {loading ? (
+            <span className="text-xs text-zinc-500">...</span>
+          ) : (
+            <span className="text-xs text-zinc-400 whitespace-nowrap">{tools.length} tools</span>
+          )}
         </div>
-      </div>
-
-      {/* Endpoints List */}
-      <div className="p-3">
-        {loading ? (
-          <div className="text-xs text-zinc-500">Loading endpoints...</div>
-        ) : tools.length > 0 ? (
-          <details className="group" open>
-            <summary className="cursor-pointer text-xs font-medium text-zinc-400 hover:text-zinc-300 flex items-center gap-2 mb-2">
-              <span className="group-open:rotate-90 transition-transform">▶</span>
-              Available Endpoints ({tools.length})
-            </summary>
-            <div className="space-y-1.5 max-h-48 overflow-y-auto">
-              {tools.map((tool) => (
-                <div key={tool.name} className="bg-zinc-900 rounded p-2 border border-zinc-700">
-                  <div className="font-mono text-[10px] text-blue-400">
-                    {tool.name}
-                  </div>
-                  {tool.description && (
-                    <div className="text-[9px] text-zinc-500 mt-0.5 line-clamp-2">
-                      {tool.description}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </details>
-        ) : (
-          <div className="text-xs text-zinc-500">No endpoints available</div>
-        )}
       </div>
     </div>
   );
 }
 
-export default function ChatArea({ tabId }: ChatAreaProps) {
-  const { user } = useAuth();
-  const [showFileTree, setShowFileTree] = useState(true);
+export default function ChatArea({ tabId, onOpenProject }: ChatAreaProps) {
+  const { user, session } = useAuth();
+  const [showFileTree, setShowFileTree] = useState(false);
   const [selectedServer, setSelectedServer] = useState<string | null>(null);
   const [selectedServerName, setSelectedServerName] = useState<string>('');
-  const [isServerListCollapsed, setIsServerListCollapsed] = useState(false);
+  const [filesystemServiceName, setFilesystemServiceName] = useState('filesystem');
+  
+  // Apps Script Projects State
+  const [appsScriptProjects, setAppsScriptProjects] = useState<any[]>([]);
+  const [appsScriptServiceName, setAppsScriptServiceName] = useState<string | null>(null);
+
+  // Fetch user's servers
+  const { servers, loading: serversLoading, error: serversError, refresh: refreshServers } = useUserServers();
+  const { healthStatus, checking: checkingHealth, refresh: refreshHealth } = useServerHealth(
+    servers.map(s => s.server_key)
+  );
   
   // MCP Service Discovery
   const { services } = useMCPServices(selectedServer || '');
   
-  // MCP Tools (default to filesystem for backward compatibility)
-  const { callTool, listDirectory, readFile, getFileInfo, loading: mcpLoading } = useMCPTools(selectedServer || '', 'filesystem');
+  // Detect filesystem service
+  useEffect(() => {
+    console.log('🕵️‍♀️ Detecting services...', { 
+      selectedServer, 
+      servicesCount: services?.length, 
+      services: services?.map(s => s.name) 
+    });
+
+    const detectFsService = async () => {
+      if (!selectedServer || !services || services.length === 0) {
+        console.log('⚠️ No server or services available for FS detection');
+        return;
+      }
+
+      // Fast path: if 'filesystem' exists, use it
+      if (services.some(s => s.name === 'filesystem')) {
+        console.log('✅ Found standard "filesystem" service');
+        setFilesystemServiceName('filesystem');
+        return;
+      }
+
+      console.log('🔍 "filesystem" not found, checking tools of other services...');
+      // Slow path: check tools of each service to find fs_list_directory
+      const tunnelUrl = process.env.NEXT_PUBLIC_TUNNEL_SERVICE_URL || 'https://tunneling-service.onrender.com';
+      
+      for (const service of services) {
+        try {
+            console.log(`🔎 Checking tools for service: ${service.name}`);
+            const response = await fetch(`${tunnelUrl}/t/${selectedServer}/${service.name}/tools`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${session?.access_token}`,
+                }
+            });
+            if (response.ok) {
+                const tools = await response.json();
+                console.log(`🛠️ Tools for ${service.name}:`, tools.map((t: any) => t.name));
+                if (Array.isArray(tools) && tools.some((t: any) => t.name === 'fs_list_directory')) {
+                    console.log(`✅ Found filesystem tools in service: ${service.name}`);
+                    setFilesystemServiceName(service.name);
+                    break;
+                }
+            } else {
+                console.warn(`⚠️ Failed to fetch tools for ${service.name}: ${response.status}`);
+            }
+        } catch (err) {
+            console.error(`❌ Error checking tools for ${service.name}:`, err);
+        }
+      }
+    };
+    
+    const detectAppsScriptService = async () => {
+       if (!selectedServer) {
+         return;
+       }
+       
+       // Default to 'apps-script' if services list is empty or not found
+       let scriptServiceName = 'apps-script';
+       
+       if (services && services.length > 0) {
+         const found = services.find(s => s.name.includes('apps-script') || s.name.includes('appsscript'));
+         if (found) {
+            scriptServiceName = found.name;
+            console.log('✅ Found Apps Script service in discovery:', scriptServiceName);
+         } else {
+            console.log('⚠️ Apps Script service not found in discovery list, trying default "apps-script"');
+         }
+       } else {
+          console.log('⚠️ Services list empty or not loaded, assuming default "apps-script" service');
+       }
+       
+       setAppsScriptServiceName(scriptServiceName);
+         
+       try {
+          const tunnelUrl = process.env.NEXT_PUBLIC_TUNNEL_SERVICE_URL || 'https://tunneling-service.onrender.com';
+          console.log(`🚀 Fetching projects from ${scriptServiceName} via ${tunnelUrl}...`);
+          
+          const response = await fetch(`${tunnelUrl}/t/${selectedServer}/${scriptServiceName}/tools/call`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${session?.access_token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              tool: 'apps_script_list_projects',
+              arguments: {}
+            })
+          });
+          
+          console.log(`📨 Apps Script list response status: ${response.status}`);
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('📦 Raw Apps Script response:', data);
+            
+            // Parse result
+            let content = data.result?.content?.[0]?.text || data.content?.[0]?.text;
+            let projects = [];
+            
+            if (content) {
+               try {
+                 const parsed = JSON.parse(content);
+                 if (Array.isArray(parsed)) projects = parsed;
+                 else if (parsed.entries) projects = parsed.entries;
+                 else if (parsed.projects) projects = parsed.projects;
+               } catch (e) { console.error('❌ Failed to parse projects list JSON:', e); }
+            } else if (Array.isArray(data.result)) {
+               projects = data.result;
+            } else if (data.result && Array.isArray(data.result.projects)) {
+               projects = data.result.projects;
+            }
+            
+            console.log('📜 Parsed Apps Script Projects:', projects);
+            setAppsScriptProjects(projects);
+            
+            // Add a message to chat with the projects
+            if (projects.length > 0) {
+              setMessages(prev => {
+                // Check if we already have a project message to avoid duplicates
+                if (prev.some(m => m.projects && m.projects.length > 0)) return prev;
+                
+                return [...prev, {
+                  id: 'projects-' + Date.now(),
+                  role: 'assistant',
+                  content: `I found ${projects.length} Apps Script projects in your workspace.`,
+                  timestamp: new Date(),
+                  projects: projects
+                }];
+              });
+            }
+          } else {
+              const errorText = await response.text();
+              console.error(`❌ Failed to fetch apps script projects: ${response.status} ${errorText}`);
+          }
+       } catch (err) {
+         console.error('❌ Error fetching apps script projects:', err);
+       }
+    };
+
+    detectFsService();
+    detectAppsScriptService();
+  }, [selectedServer, services, session]);
+  
+  // MCP Tools (dynamically use the detected filesystem service)
+  const { callTool, listDirectory, readFile, getFileInfo, loading: mcpLoading } = useMCPTools(selectedServer || '', filesystemServiceName);
   
   const searchFiles = async (path: string, pattern: string, searchContent: boolean = false, maxResults: number = 100) => {
     return await callTool('fs_search_files', { path, pattern, searchContent, maxResults });
@@ -164,12 +286,47 @@ export default function ChatArea({ tabId }: ChatAreaProps) {
     // Reset conversation history when server changes
     conversationHistoryRef.current = [];
     setContextMessageCount(0);
+    setFilesystemServiceName('filesystem');
+    setAppsScriptProjects([]);
+    setAppsScriptServiceName(null);
     
-    // Expand the server list when no server is selected
+    // Hide file tree when no server is selected
     if (!selectedServer) {
-      setIsServerListCollapsed(false);
+      setShowFileTree(false);
+    } else {
+      setShowFileTree(true);
     }
   }, [user, selectedServer, selectedServerName]);
+
+  const handleProjectClick = (project: any) => {
+    if (onOpenProject && selectedServer && appsScriptServiceName) {
+      let projectId = '';
+      let projectName = '';
+      
+      if (typeof project === 'string') {
+        // Try to extract ID from format "Name [ID]"
+        const match = project.match(/^(.*?) \[([a-zA-Z0-9_-]+)\]$/);
+        if (match) {
+          projectName = match[1];
+          projectId = match[2];
+        } else {
+          projectName = project;
+          projectId = project; // Fallback
+        }
+      } else {
+        projectId = project.id || project.scriptId;
+        projectName = project.name || project.title;
+      }
+      
+      if (projectId) {
+        onOpenProject(projectId, projectName, selectedServer, appsScriptServiceName);
+        return;
+      }
+    }
+    
+    // Fallback to chat input if not connected or no handler
+    setInput(`I want to work on project: ${project.name || project}`);
+  };
 
   const handleSend = async () => {
     if ((!input.trim() && uploadedFiles.length === 0) || mcpLoading) return;
@@ -437,7 +594,7 @@ Be proactive and helpful in interpreting user intent. If a command is ambiguous,
             const serviceName = toolInfo?.service || 'filesystem';
             
             // Handle filesystem tools with existing logic
-            if (serviceName === 'filesystem') {
+            if (serviceName === 'filesystem' || serviceName === filesystemServiceName) {
               switch (toolCall.name) {
                 case 'fs_search_files':
                   result = await searchFiles(
@@ -711,16 +868,6 @@ Be proactive and helpful in interpreting user intent. If a command is ambiguous,
 
   return (
     <div className="flex h-full">
-      {/* Hidden file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        accept="*"
-        onChange={handleFilePickerChange}
-        className="hidden"
-      />
-
       {/* Chat Section */}
       <div 
         className="flex flex-1 flex-col relative"
@@ -751,452 +898,269 @@ Be proactive and helpful in interpreting user intent. If a command is ambiguous,
             </div>
           </div>
         )}
-        {/* Toolbar */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-700">
-          <div className="flex items-center gap-3">
-            <h3 className="text-lg font-semibold text-white">
-              AI Assistant {selectedServerName && `- ${selectedServerName}`}
-            </h3>
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${
-                connectionStatus === 'connected' ? 'bg-green-500' : 
-                connectionStatus === 'error' ? 'bg-red-500' : 
-                'bg-gray-500'
-              }`} />
-              <span className="text-xs text-zinc-400">
-                {connectionStatus === 'connected' ? 'Connected' : 
-                 connectionStatus === 'error' ? 'Error' : 
-                 'Not Connected'}
-              </span>
-            </div>
-            {contextMessageCount > 1 && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-zinc-500">
-                  {contextMessageCount - 1} messages in context
-                </span>
-                <button
-                  onClick={() => {
-                    conversationHistoryRef.current = [];
-                    setContextMessageCount(0);
-                    console.log('🗑️ Conversation context cleared');
-                  }}
-                  className="text-xs text-zinc-400 hover:text-red-400 transition-colors"
-                  title="Clear conversation context"
-                >
-                  Clear
-                </button>
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <AuthButton />
-            <button
-              onClick={() => setShowFileTree(!showFileTree)}
-              className={`p-1.5 rounded transition-colors ${
-                showFileTree ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:bg-zinc-700 hover:text-white'
-              }`}
-              title={showFileTree ? 'Hide Servers' : 'Show Servers'}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
         {/* Messages Area */}
         {!selectedServer ? (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center text-zinc-500">
-              <div className="w-16 h-16 mx-auto mb-4 bg-zinc-800 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
+          <div className="flex-1 overflow-y-auto p-8">
+            <div className="max-w-4xl mx-auto">
+              {/* Header */}
+              <div className="text-center mb-8">
+                <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-blue-500/10 to-purple-600/10 rounded-2xl flex items-center justify-center border border-zinc-700">
+                  <Server className="w-10 h-10 text-zinc-400" />
+                </div>
+                <h3 className="text-2xl font-semibold text-white mb-3">Welcome to EGDesk</h3>
+                <p className="text-sm text-zinc-400">
+                  Select an MCP server to start chatting with your AI assistant
+                </p>
               </div>
-              <h3 className="text-lg font-medium mb-2">Select a Server</h3>
-              <p className="text-sm">Choose an MCP server from the right panel to start</p>
-            </div>
-          </div>
-        ) : (
-          <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
-            {message.role === 'assistant' && (
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold">
-                AI
-              </div>
-            )}
-            
-            <div
-              className={`flex flex-col max-w-[70%] ${
-                message.role === 'user' ? 'items-end' : 'items-start'
-              }`}
-            >
-            <div
-              className={`rounded-2xl px-4 py-3 ${
-                message.role === 'user'
-                  ? 'bg-blue-600 text-white'
-                  : message.error
-                  ? 'bg-red-900/50 text-red-200 border border-red-700'
-                  : 'bg-zinc-700 text-white'
-              }`}
-            >
-              {/* Display attached files */}
-              {message.files && message.files.length > 0 && (
-                <div className="mb-2 space-y-2">
-                  {message.files.map((file) => (
-                    <div
-                      key={file.id}
-                      className="flex items-center gap-2 p-2 bg-black/20 rounded-lg"
+
+              {/* Server Cards */}
+              {serversLoading ? (
+                <div className="flex items-center justify-center gap-2 text-zinc-400 text-sm py-12">
+                  <div className="w-5 h-5 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin"></div>
+                  <span>Loading servers...</span>
+                </div>
+              ) : serversError ? (
+                <div className="max-w-md mx-auto">
+                  <div className="bg-red-900/20 border border-red-700 rounded-lg p-4">
+                    <p className="text-red-400 text-sm font-medium">Failed to load servers</p>
+                    <p className="text-red-300 text-xs mt-1">{serversError}</p>
+                    <button
+                      onClick={() => {
+                        refreshServers();
+                        refreshHealth();
+                      }}
+                      className="mt-3 text-xs text-red-400 hover:text-red-300 flex items-center gap-1"
                     >
-                      {file.preview ? (
-                        <img
-                          src={file.preview}
-                          alt={file.file.name}
-                          className="w-12 h-12 object-cover rounded"
-                        />
-                      ) : (
-                        <div className="w-8 h-8 flex items-center justify-center">
-                          <svg
-                            className="w-6 h-6"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                            />
-                          </svg>
-                        </div>
-                      )}
-                      <span className="text-xs truncate flex-1">
-                        {file.file.name}
-                      </span>
-                    </div>
-                  ))}
+                      <RefreshCw className="w-3 h-3" />
+                      Retry
+                    </button>
+                  </div>
                 </div>
-              )}
-              <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-              
-              {/* Display Tool Call Results */}
-              {message.toolCalls && message.toolCalls.length > 0 && (
-                <div className="mt-3 space-y-2">
-                  {message.toolCalls.map((toolCall, idx) => {
-                    console.log(`🎨 Rendering tool call ${idx}:`, toolCall.name, 'result:', toolCall.result);
-                    return (
-                    <div key={idx} className="bg-black/20 rounded-lg p-3 border border-white/10">
-                      <div className="flex items-center gap-2 mb-2">
-                        <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span className="text-xs font-medium text-green-400">
-                          {toolCall.name === 'fs_upload_file' ? '📤 File Uploaded' :
-                           toolCall.name === 'fs_download_file' ? '📥 File Downloaded' :
-                           toolCall.name === 'fs_search_files' ? '🔍 Files Found' :
-                           toolCall.name === 'fs_list_directory' ? '📁 Directory Listed' :
-                           toolCall.name === 'fs_read_file' ? '📄 File Read' :
-                           `🔧 ${toolCall.name}`}
-                        </span>
-                      </div>
-                      
-                      {/* Special handling for file downloads */}
-                      {toolCall.name === 'fs_download_file' && (() => {
-                        try {
-                          console.log('🎯 Download button rendering, toolCall.result:', toolCall.result);
-                          console.log('🎯 Download button rendering, toolCall.args:', toolCall.args);
-                          
-                          // Parse the download result
-                          let fileData: string | undefined;
-                          let fileName: string | undefined;
-                          let mimeType: string | undefined;
-                          
-                          // Check if data is in content[0].data (MCP standard format)
-                          const contentItem = toolCall.result?.content?.[0];
-                          if (contentItem?.data) {
-                            // Direct base64 data in content[0].data
-                            fileData = contentItem.data;
-                            fileName = toolCall.args.path?.split('/').pop() || 'downloaded-file';
-                            
-                            // Try to infer MIME type from filename extension
-                            const ext = fileName?.split('.').pop()?.toLowerCase();
-                            const mimeTypes: Record<string, string> = {
-                              'pdf': 'application/pdf',
-                              'png': 'image/png',
-                              'jpg': 'image/jpeg',
-                              'jpeg': 'image/jpeg',
-                              'gif': 'image/gif',
-                              'txt': 'text/plain',
-                              'json': 'application/json',
-                              'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                              'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                            };
-                            mimeType = (ext && mimeTypes[ext]) || 'application/octet-stream';
-                          } else {
-                            // Fallback: try to parse text as JSON
-                            const resultText = contentItem?.text;
-                            if (resultText) {
-                              try {
-                                const parsed = JSON.parse(resultText);
-                                fileData = parsed.data || parsed.content || parsed.base64;
-                                fileName = parsed.filename || parsed.name || toolCall.args.path?.split('/').pop() || 'downloaded-file';
-                                mimeType = parsed.mimeType || parsed.type || 'application/octet-stream';
-                              } catch {
-                                // Not JSON, might be plain text message
-                                return (
-                                  <p className="text-xs text-zinc-300 font-mono">
-                                    {resultText}
-                                  </p>
-                                );
-                              }
-                            }
-                          }
-                          
-                          if (fileData) {
-                            console.log('✅ Creating download button for:', fileName, 'MIME:', mimeType, 'Data length:', fileData.length);
-                            // Create download button
-                            return (
-                              <button
-                                onClick={() => {
-                                  try {
-                                    // Convert base64 to blob
-                                    const byteCharacters = atob(fileData);
-                                    const byteNumbers = new Array(byteCharacters.length);
-                                    for (let i = 0; i < byteCharacters.length; i++) {
-                                      byteNumbers[i] = byteCharacters.charCodeAt(i);
-                                    }
-                                    const byteArray = new Uint8Array(byteNumbers);
-                                    const blob = new Blob([byteArray], { type: mimeType });
-                                    
-                                    // Create download link
-                                    const url = URL.createObjectURL(blob);
-                                    const a = document.createElement('a');
-                                    a.href = url;
-                                    a.download = fileName || 'downloaded-file';
-                                    document.body.appendChild(a);
-                                    a.click();
-                                    document.body.removeChild(a);
-                                    URL.revokeObjectURL(url);
-                                  } catch (err) {
-                                    console.error('Download failed:', err);
-                                    alert('Failed to download file');
-                                  }
-                                }}
-                                className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-xs font-medium"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                </svg>
-                                Download {fileName}
-                              </button>
-                            );
-                          }
-                          
-                          // Fallback to text display
-                          return (
-                            <p className="text-xs text-zinc-300">
-                              {JSON.stringify(toolCall.result, null, 2)}
-                            </p>
-                          );
-                        } catch (err) {
-                          return (
-                            <p className="text-xs text-red-300">
-                              Error parsing download result: {err instanceof Error ? err.message : 'Unknown error'}
-                            </p>
-                          );
-                        }
-                      })()}
-                      
-                      {/* Regular result display for other tools */}
-                      {toolCall.name !== 'fs_download_file' && toolCall.result?.content?.[0]?.text && (
-                        <p className="text-xs text-zinc-300 font-mono">
-                          {toolCall.result.content[0].text}
-                        </p>
-                      )}
-                      {toolCall.name !== 'fs_download_file' && toolCall.result?.content && !toolCall.result.content[0]?.text && (
-                        <p className="text-xs text-zinc-300">
-                          {typeof toolCall.result.content === 'string' 
-                            ? toolCall.result.content 
-                            : JSON.stringify(toolCall.result.content, null, 2)}
-                        </p>
-                      )}
-                    </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-              <span className="text-xs text-zinc-500 mt-1 px-2">
-                {message.timestamp.toLocaleTimeString([], { 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
-                })}
-              </span>
-            </div>
-
-            {message.role === 'user' && (
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center text-white text-sm font-semibold">
-                U
-              </div>
-            )}
-          </div>
-        ))}
-
-        {isTyping && (
-          <div className="flex gap-3 justify-start">
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold">
-              AI
-            </div>
-            <div className="bg-zinc-700 rounded-2xl px-4 py-3">
-              <div className="flex gap-1">
-                <div className="w-2 h-2 rounded-full bg-zinc-400 animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                <div className="w-2 h-2 rounded-full bg-zinc-400 animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                <div className="w-2 h-2 rounded-full bg-zinc-400 animate-bounce" style={{ animationDelay: '300ms' }}></div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div ref={messagesEndRef} />
-        </div>
-        )}
-
-        {/* Input Area */}
-        {selectedServer && (
-          <div className="border-t border-zinc-700 bg-zinc-800 p-4">
-        {/* File Upload Area - Shows attached files before sending */}
-        {uploadedFiles.length > 0 && (
-          <div className="mb-3">
-            <FileUpload
-              files={uploadedFiles}
-              onFilesChange={setUploadedFiles}
-              onTriggerPicker={triggerFilePicker}
-              maxFiles={10}
-              maxSizeMB={100}
-              accept="*"
-            />
-          </div>
-        )}
-
-        <div className="flex gap-2 items-end">
-          <div className="flex-1 bg-zinc-700 rounded-2xl px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 transition-all">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              onPaste={handlePaste}
-              placeholder={uploadedFiles.length > 0 ? `Message with ${uploadedFiles.length} file${uploadedFiles.length > 1 ? 's' : ''}...` : "Type a message..."}
-              className="w-full bg-transparent text-white placeholder-zinc-400 resize-none focus:outline-none text-sm"
-              rows={1}
-              style={{
-                maxHeight: '120px',
-                minHeight: '24px',
-              }}
-              onInput={(e) => {
-                const target = e.target as HTMLTextAreaElement;
-                target.style.height = 'auto';
-                target.style.height = Math.min(target.scrollHeight, 120) + 'px';
-              }}
-            />
-          </div>
-          
-          <button
-            onClick={handleSend}
-            disabled={(!input.trim() && uploadedFiles.length === 0) || mcpLoading}
-            className="flex-shrink-0 h-11 w-11 rounded-full bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
-          >
-            <svg
-              className="w-5 h-5 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-              />
-            </svg>
-          </button>
-        </div>
-        
-        <div className="flex items-center justify-between mt-2 px-2">
-          <div className="flex gap-2 items-center">
-            <button 
-              onClick={triggerFilePicker}
-              className={`text-xs transition-colors ${
-                uploadedFiles.length > 0
-                  ? 'text-blue-400 hover:text-blue-300'
-                  : 'text-zinc-400 hover:text-zinc-300'
-              }`}
-              title="Attach files (click, drag & drop, or paste)"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-              </svg>
-            </button>
-            {uploadedFiles.length > 0 && (
-              <span className="text-xs text-blue-400">
-                {uploadedFiles.length} file{uploadedFiles.length > 1 ? 's' : ''} attached
-              </span>
-            )}
-          </div>
-          <span className="text-xs text-zinc-500">
-            Press Enter to send • Drag & drop or paste files
-          </span>
-        </div>
-        </div>
-        )}
-      </div>
-
-      {/* Right Side Panel */}
-      {showFileTree && (
-        <div className="w-80 flex-shrink-0 border-l border-zinc-700">
-          <div className="h-full flex flex-col overflow-y-auto">
-            {/* Servers Section */}
-            <div className="flex-shrink-0">
-              {selectedServer && isServerListCollapsed ? (
-                // Collapsed Header - Show selected server with expand button
-                <div 
-                  className="p-3 border-b border-zinc-700 bg-zinc-900 cursor-pointer hover:bg-zinc-800 transition-colors"
-                  onClick={() => setIsServerListCollapsed(false)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs text-zinc-500">Selected Server</div>
-                      <div className="font-semibold text-sm text-zinc-200 truncate">{selectedServerName}</div>
-                    </div>
-                    <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
+              ) : servers.length === 0 ? (
+                <div className="max-w-md mx-auto">
+                  <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-6 text-center">
+                    <Server className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
+                    <p className="text-zinc-300 text-sm font-medium mb-2">No servers available</p>
+                    <p className="text-zinc-500 text-xs">
+                      Ask a server owner to grant you access to their MCP server
+                    </p>
                   </div>
                 </div>
               ) : (
-                // Expanded Server List
-                <ServerList 
-                  selectedServer={selectedServer || undefined}
-                  onServerSelect={(serverKey) => {
-                    console.log('Selected server:', serverKey);
-                    setSelectedServer(serverKey);
-                    setSelectedServerName(serverKey);
-                    // Collapse the list when a server is selected and it has services
-                    if (serverKey) {
-                      setIsServerListCollapsed(true);
-                    }
-                  }}
-                />
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-sm font-semibold text-zinc-300">
+                      Available Servers ({servers.length})
+                    </h4>
+                    <button
+                      onClick={() => {
+                        refreshServers();
+                        refreshHealth();
+                      }}
+                      disabled={serversLoading || checkingHealth}
+                      className="p-1.5 rounded hover:bg-zinc-700 transition-colors disabled:opacity-50"
+                      title="Refresh servers"
+                    >
+                      <RefreshCw className={`w-4 h-4 text-zinc-400 hover:text-white ${(serversLoading || checkingHealth) ? 'animate-spin' : ''}`} />
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {servers.map((server) => {
+                      const getStatusIcon = (status: string) => {
+                        switch (status) {
+                          case 'active':
+                            return <CheckCircle className="w-5 h-5 text-green-500" />;
+                          case 'pending':
+                            return <Clock className="w-5 h-5 text-yellow-500" />;
+                          case 'revoked':
+                          case 'expired':
+                            return <Ban className="w-5 h-5 text-red-500" />;
+                          default:
+                            return <Server className="w-5 h-5 text-zinc-500" />;
+                        }
+                      };
+
+                      const getAccessLevelColor = (level: string) => {
+                        switch (level) {
+                          case 'admin':
+                            return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
+                          case 'read_write':
+                            return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
+                          case 'read_only':
+                            return 'text-zinc-400 bg-zinc-400/10 border-zinc-400/20';
+                          default:
+                            return 'text-zinc-500 bg-zinc-500/10 border-zinc-500/20';
+                        }
+                      };
+
+                      return (
+                        <button
+                          key={server.id}
+                          onClick={() => {
+                            setSelectedServer(server.server_key);
+                            setSelectedServerName(server.name);
+                          }}
+                          className="text-left p-4 rounded-lg border bg-zinc-800 border-zinc-700 hover:bg-zinc-750 hover:border-zinc-600 hover:shadow-lg transition-all group"
+                        >
+                          {/* Server Header */}
+                          <div className="flex items-start justify-between gap-2 mb-3">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-base font-semibold text-white truncate group-hover:text-blue-400 transition-colors">
+                                {server.name}
+                              </h4>
+                              <p className="text-xs text-zinc-500 truncate mt-0.5 font-mono">
+                                {server.server_key}
+                              </p>
+                            </div>
+                            {getStatusIcon(server.permission_status)}
+                          </div>
+
+                          {/* Description */}
+                          {server.description && (
+                            <p className="text-xs text-zinc-400 mb-3 line-clamp-2">
+                              {server.description}
+                            </p>
+                          )}
+
+                          {/* Status Badges */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`text-xs px-2 py-1 rounded-full border ${getAccessLevelColor(server.access_level)}`}>
+                              {server.access_level.replace('_', ' ')}
+                            </span>
+                            {healthStatus[server.server_key] && (
+                              <div className="flex items-center gap-1.5 text-xs">
+                                {healthStatus[server.server_key].online ? (
+                                  <>
+                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                    <span className="text-green-400">online</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <div className="w-2 h-2 rounded-full bg-gray-500"></div>
+                                    <span className="text-gray-500" title={healthStatus[server.server_key].error}>
+                                      offline
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
               )}
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Toolbar */}
+            <div className="flex items-center justify-between px-4 py-2 border-b border-zinc-700">
+              <div className="flex items-center gap-3">
+                <h3 className="text-lg font-semibold text-white">
+                  {selectedServerName}
+                </h3>
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${
+                    connectionStatus === 'connected' ? 'bg-green-500' : 
+                    connectionStatus === 'error' ? 'bg-red-500' : 
+                    'bg-gray-500'
+                  }`} />
+                  <span className="text-xs text-zinc-400">
+                    {connectionStatus === 'connected' ? 'Connected' : 
+                     connectionStatus === 'error' ? 'Error' : 
+                     'Not Connected'}
+                  </span>
+                </div>
+                {contextMessageCount > 1 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-zinc-500">
+                      {contextMessageCount - 1} messages in context
+                    </span>
+                    <button
+                      onClick={() => {
+                        conversationHistoryRef.current = [];
+                        setContextMessageCount(0);
+                        console.log('🗑️ Conversation context cleared');
+                      }}
+                      className="text-xs text-zinc-400 hover:text-red-400 transition-colors"
+                      title="Clear conversation context"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowFileTree(!showFileTree)}
+                  className={`p-1.5 rounded transition-colors ${
+                    showFileTree ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:bg-zinc-700 hover:text-white'
+                  }`}
+                  title={showFileTree ? 'Hide Panel' : 'Show Panel'}
+                >
+                  <svg 
+                    className={`w-4 h-4 transition-transform ${showFileTree ? '' : 'rotate-180'}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Chat Messages */}
+            <MessageList 
+              messages={messages} 
+              isTyping={isTyping} 
+              messagesEndRef={messagesEndRef}
+              onOpenProject={onOpenProject ? (id, name) => handleProjectClick({ id, name }) : undefined}
+            />
+
+            {/* Input Area */}
+            <ChatInput
+              input={input}
+              setInput={setInput}
+              uploadedFiles={uploadedFiles}
+              setUploadedFiles={setUploadedFiles}
+              handleSend={handleSend}
+              mcpLoading={mcpLoading}
+              triggerFilePicker={triggerFilePicker}
+              fileInputRef={fileInputRef}
+              handleFilePickerChange={handleFilePickerChange}
+              handleKeyPress={handleKeyPress}
+              handlePaste={handlePaste}
+            />
+          </>
+        )}
+      </div>
+
+      {/* Right Side Panel - Only show when server is selected */}
+      {selectedServer && showFileTree && (
+        <div className="w-80 flex-shrink-0 border-l border-zinc-700">
+          <div className="h-full flex flex-col">
+            {/* File System Tree */}
+            <div className="flex-shrink-0 border-b border-zinc-700" style={{ height: '400px' }}>
+              <FileSystemBrowser 
+                key={`${selectedServer}-${filesystemServiceName}`}
+                serverKey={selectedServer}
+                onLoadDirectory={async (path: string) => {
+                  return await listDirectory(path);
+                }}
+                onFileSelect={(path, type) => {
+                  console.log('File selected:', path, type);
+                  // You can add file preview or download logic here
+                }}
+              />
             </div>
               
             {/* MCP Services - Display All as Cards */}
-            {selectedServer && services.length > 0 && (
-              <div className="flex-1 border-t border-zinc-700 p-4">
+            {services.length > 0 && (
+              <div className="flex-1 overflow-y-auto p-4">
                 <h3 className="text-xs font-semibold text-zinc-300 mb-3">
                   Available MCP Services ({services.length})
                 </h3>
@@ -1219,4 +1183,3 @@ Be proactive and helpful in interpreting user intent. If a command is ambiguous,
     </div>
   );
 }
-

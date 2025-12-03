@@ -3,21 +3,50 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Sidebar from './Sidebar';
-import TabWindow from './TabWindow';
+import TabWindow, { Tab } from './TabWindow';
 import SignInPage from './SignInPage';
 
 export default function ChatLayout() {
   const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState('chat-1');
-  const [tabs, setTabs] = useState([
-    { id: 'chat-1', title: 'Chat 1', active: true },
+  const [tabs, setTabs] = useState<Tab[]>([
+    { id: 'chat-1', title: 'Chat 1', active: true, type: 'chat' },
   ]);
 
   const createNewTab = () => {
-    const newId = `chat-${tabs.length + 1}`;
+    const newId = `chat-${Date.now()}`; // Use timestamp to avoid conflicts
     setTabs([
       ...tabs.map(tab => ({ ...tab, active: false })),
-      { id: newId, title: `Chat ${tabs.length + 1}`, active: true }
+      { id: newId, title: `Chat ${tabs.length + 1}`, active: true, type: 'chat' }
+    ]);
+    setActiveTab(newId);
+  };
+
+  const handleOpenProject = (projectId: string, projectName: string, serverKey: string, serviceName: string) => {
+    const newId = `project-${projectId}`;
+    
+    // Check if tab already exists
+    const existingTab = tabs.find(t => t.id === newId);
+    if (existingTab) {
+      setActiveTab(newId);
+      setTabs(tabs.map(tab => ({ ...tab, active: tab.id === newId })));
+      return;
+    }
+
+    setTabs([
+      ...tabs.map(tab => ({ ...tab, active: false })),
+      { 
+        id: newId, 
+        title: projectName || 'Project', 
+        active: true, 
+        type: 'apps-script-editor',
+        data: {
+          projectId,
+          projectName,
+          serverKey,
+          serviceName
+        }
+      }
     ]);
     setActiveTab(newId);
   };
@@ -31,6 +60,8 @@ export default function ChatLayout() {
     if (id === activeTab && newTabs.length > 0) {
       const newActiveIndex = Math.min(tabIndex, newTabs.length - 1);
       setActiveTab(newTabs[newActiveIndex].id);
+      // Ensure the new active tab is marked as active in the state
+      newTabs[newActiveIndex].active = true;
     }
     
     setTabs(newTabs);
@@ -68,8 +99,8 @@ export default function ChatLayout() {
         onTabSwitch={switchTab}
         onTabClose={closeTab}
         onNewTab={createNewTab}
+        onOpenProject={handleOpenProject}
       />
     </div>
   );
 }
-
