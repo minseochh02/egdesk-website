@@ -17,7 +17,8 @@ import {
   PanelRightOpen,
   Sparkles,
   User,
-  Bot
+  Bot,
+  Table2
 } from 'lucide-react';
 
 interface AppsScriptEditorProps {
@@ -32,6 +33,21 @@ interface ScriptFile {
   type: string;
   source?: string;
   id?: string;
+}
+
+interface SpreadsheetContext {
+  spreadsheetId: string;
+  spreadsheetUrl: string;
+  spreadsheetName?: string;
+  sheets: Array<{
+    sheetTitle: string;
+    headers: string[];
+    sampleData: string[][];
+    rowCount: number;
+    columnCount: number;
+  }>;
+  isLoading: boolean;
+  error?: string;
 }
 
 interface ChatMessage {
@@ -71,11 +87,105 @@ export default function AppsScriptEditor({
 
   // MCP Hooks
   const { callTool, loading: mcpLoading } = useMCPTools(serverKey, serviceName);
+  const { callTool: callSheetsTool } = useMCPTools(serverKey, 'sheets');
+
+  // Spreadsheet context state
+  const [spreadsheetContext, setSpreadsheetContext] = useState<SpreadsheetContext>({
+    spreadsheetId: '',
+    spreadsheetUrl: '',
+    sheets: [],
+    isLoading: true,
+  });
 
   // Fetch files on mount
   useEffect(() => {
     loadFiles();
   }, [projectId, serverKey, serviceName]);
+
+  // Fetch project details and spreadsheet context on mount
+  useEffect(() => {
+    loadSpreadsheetContext();
+  }, [projectId, serverKey]);
+
+  const loadSpreadsheetContext = async () => {
+    setSpreadsheetContext(prev => ({ ...prev, isLoading: true, error: undefined }));
+    
+    try {
+      // Step 1: Get project details (includes spreadsheetId)
+      console.log('📊 Fetching project details for spreadsheet context...');
+      const projectResult = await callTool('apps_script_get_project', { projectId });
+      
+      let spreadsheetId = '';
+      let spreadsheetUrl = '';
+      
+      // Parse the project result
+      if (projectResult?.content?.[0]?.text) {
+        try {
+          const parsed = JSON.parse(projectResult.content[0].text);
+          spreadsheetId = parsed.spreadsheetId || '';
+          spreadsheetUrl = parsed.spreadsheetUrl || '';
+        } catch (e) {
+          console.warn('Failed to parse project details:', e);
+        }
+      } else if (projectResult?.spreadsheetId) {
+        spreadsheetId = projectResult.spreadsheetId;
+        spreadsheetUrl = projectResult.spreadsheetUrl || '';
+      }
+
+      if (!spreadsheetId) {
+        console.log('📝 No bound spreadsheet found for this project');
+        setSpreadsheetContext({
+          spreadsheetId: '',
+          spreadsheetUrl: '',
+          sheets: [],
+          isLoading: false,
+        });
+        return;
+      }
+
+      console.log(`📊 Found bound spreadsheet: ${spreadsheetId}`);
+
+      // Step 2: Get full spreadsheet context (metadata + sample data)
+      const sheetsResult = await callSheetsTool('sheets_get_full_context', { 
+        spreadsheetId,
+        sampleRows: 5 
+      });
+
+      let spreadsheetName = '';
+      let sheetsData: SpreadsheetContext['sheets'] = [];
+
+      // Parse the sheets result
+      if (sheetsResult?.content?.[0]?.text) {
+        try {
+          const parsed = JSON.parse(sheetsResult.content[0].text);
+          spreadsheetName = parsed.metadata?.title || '';
+          sheetsData = parsed.sheetsData || [];
+        } catch (e) {
+          console.warn('Failed to parse sheets context:', e);
+        }
+      } else if (sheetsResult?.metadata) {
+        spreadsheetName = sheetsResult.metadata.title || '';
+        sheetsData = sheetsResult.sheetsData || [];
+      }
+
+      console.log(`✅ Loaded spreadsheet context: "${spreadsheetName}" with ${sheetsData.length} sheets`);
+
+      setSpreadsheetContext({
+        spreadsheetId,
+        spreadsheetUrl,
+        spreadsheetName,
+        sheets: sheetsData,
+        isLoading: false,
+      });
+    } catch (err) {
+      console.error('Error loading spreadsheet context:', err);
+      setSpreadsheetContext(prev => ({
+        ...prev,
+        isLoading: false,
+        error: err instanceof Error ? err.message : 'Failed to load spreadsheet context',
+      }));
+    }
+  };
 
   const loadFiles = async () => {
     setIsLoadingFiles(true);
@@ -252,34 +362,168 @@ export default function AppsScriptEditor({
   }, [chatMessages]);
 
   const processUserMessage = async (message: string): Promise<{ content: string; toolCalls?: any[] }> => {
+    // DEBUG: Log spreadsheet context
+    console.log('🔍 DEBUG - Spreadsheet Context:', {
+      hasSpreadsheetId: !!spreadsheetContext.spreadsheetId,
+      spreadsheetId: spreadsheetContext.spreadsheetId,
+      spreadsheetName: spreadsheetContext.spreadsheetName,
+      isLoading: spreadsheetContext.isLoading,
+      sheetsCount: spreadsheetContext.sheets.length,
+      sheets: spreadsheetContext.sheets.map(s => ({
+        title: s.sheetTitle,
+        headers: s.headers,
+      }))
+    });
+    
     const availableTools = [
       {
         name: 'apps_script_list_files',
-        description: 'List all files in the current Apps Script project',
+        description: 'List all files in the current Apps Script project. Use this to see what files exist.',
         parameters: { projectId: 'string (The project ID)' }
       },
       {
         name: 'apps_script_read_file',
-        description: 'Read the contents of a file in the Apps Script project',
+        description: 'Read the contents of a file in the Apps Script project. Use this to examine code before modifying.',
         parameters: { 
           projectId: 'string (The project ID)',
-          fileName: 'string (The file name, e.g., "Code.gs")'
+          fileName: 'string (The file name, e.g., "Code.gs", "index.html")'
         }
       },
       {
         name: 'apps_script_write_file',
-        description: 'Write/update a file in the Apps Script project',
+        description: 'Create a NEW file or update an EXISTING file in the Apps Script project. Use this to create HTML files, modify code, add new functions, etc.',
         parameters: {
           projectId: 'string (The project ID)',
-          fileName: 'string (The file name)',
-          content: 'string (The new file content)'
+          fileName: 'string (The file name - can be new or existing, e.g., "NewPage.html", "Utils.gs")',
+          content: 'string (The complete file content to write)'
         }
-      }
+      },
+      // Sheets tools (only if spreadsheet is bound)
+      ...(spreadsheetContext.spreadsheetId ? [
+        {
+          name: 'sheets_get_range',
+          description: 'Read a range of cells from the bound Google Spreadsheet. Use this to get actual data.',
+          parameters: {
+            spreadsheetId: 'string (The spreadsheet ID)',
+            range: 'string (A1 notation range, e.g., "Sheet1!A1:D10")'
+          }
+        },
+        {
+          name: 'sheets_get_headers',
+          description: 'Get the header row (first row) of a sheet in the bound spreadsheet.',
+          parameters: {
+            spreadsheetId: 'string (The spreadsheet ID)',
+            sheetName: 'string (Optional, defaults to "Sheet1")'
+          }
+        }
+      ] : [])
     ];
+
+    // Build spreadsheet context section for system instruction
+    let spreadsheetSection = '';
+    if (spreadsheetContext.spreadsheetId && !spreadsheetContext.isLoading) {
+      spreadsheetSection = `
+🔴 CRITICAL - BOUND SPREADSHEET (YOU ALREADY HAVE ACCESS TO THIS DATA):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Spreadsheet Name: "${spreadsheetContext.spreadsheetName || 'Untitled Spreadsheet'}"
+- Spreadsheet ID: ${spreadsheetContext.spreadsheetId}
+- URL: ${spreadsheetContext.spreadsheetUrl}
+
+📊 ACTUAL DATA STRUCTURE (THIS IS REAL DATA FROM THE SPREADSHEET):
+${spreadsheetContext.sheets.map(sheet => `
+Sheet: "${sheet.sheetTitle}" (${sheet.rowCount} rows × ${sheet.columnCount} cols)
+  Column Headers: [${sheet.headers.map(h => `"${h}"`).join(', ') || 'No headers'}]
+  Sample Data Row 1: [${sheet.sampleData[0]?.map(d => `"${d}"`).join(', ') || 'No data'}]
+  ${sheet.sampleData[1] ? `Sample Data Row 2: [${sheet.sampleData[1]?.map(d => `"${d}"`).join(', ')}]` : ''}`).join('\n')}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ IMPORTANT: DO NOT tell the user to "upload a file" or "convert to CSV" or "provide data".
+The spreadsheet is ALREADY CONNECTED. You can read it directly using Apps Script.
+
+When user asks to "view the data", "show Excel content", "create HTML for the spreadsheet", "엑셀 내용을 볼 수 있는":
+1. DO NOT ask for files - the data is already available above!
+2. IMMEDIATELY create the files using the ACTUAL column names shown above
+3. Create Code.gs with a getData() function using SpreadsheetApp.getActiveSpreadsheet()
+4. Create an HTML file that displays the data in a table
+
+APPS SCRIPT CODE TO ACCESS THIS DATA:
+\`\`\`javascript
+// This spreadsheet is already bound - use getActiveSpreadsheet()
+function getData() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = sheet.getDataRange().getValues();
+  return data;
+}
+\`\`\`
+`;
+    } else if (!spreadsheetContext.spreadsheetId && !spreadsheetContext.isLoading) {
+      spreadsheetSection = `
+NO BOUND SPREADSHEET:
+This script is not bound to a spreadsheet. If the user wants to work with spreadsheet data:
+1. They need to provide a spreadsheet ID, or
+2. Create functions that accept spreadsheet ID as parameter
+`;
+    }
+
+    // Comprehensive system instruction for Apps Script assistant
+    const systemInstruction = `You are an expert Google Apps Script developer assistant. You help users write, debug, and improve their Apps Script code.
+
+PROJECT CONTEXT:
+- Project: "${projectName || projectId}"
+- Currently open file: ${selectedFile || 'None selected'}
+${fileContent ? `- Current file content preview (first 1500 chars):\n\`\`\`\n${fileContent.substring(0, 1500)}\n\`\`\`` : ''}
+${spreadsheetSection}
+SCRIPT FILES:
+${files.map(f => `- ${f.name} (${f.type})`).join('\n') || 'No files loaded yet'}
+
+AVAILABLE TOOLS:
+${availableTools.map(t => `- ${t.name}: ${t.description}`).join('\n')}
+
+CAPABILITIES:
+1. **Create new files**: Use apps_script_write_file with a new fileName to create .gs (server-side) or .html (client-side) files
+2. **Modify existing files**: Use apps_script_write_file to update code
+3. **Read files**: Use apps_script_read_file to examine code before suggesting changes
+4. **List project files**: Use apps_script_list_files to see all files in the project
+${spreadsheetContext.spreadsheetId ? `5. **Read spreadsheet data**: Use sheets_get_range or sheets_get_headers to get live data` : ''}
+
+IMPORTANT BEHAVIORS:
+1. When user asks to "create HTML" or "make a page", IMMEDIATELY create the file using apps_script_write_file
+2. When user asks to modify code, first read the current file if not already shown, then write the updated version
+3. For HTML files in Apps Script, use proper Apps Script HTML service patterns (<?= ?> scriptlets, google.script.run, etc.)
+4. Always generate COMPLETE, working code - don't use placeholders like "// your code here"
+5. If user's request is unclear, ask ONE clarifying question, then proceed
+${spreadsheetContext.spreadsheetId ? `
+🔴 SPREADSHEET-SPECIFIC RULES (VERY IMPORTANT):
+6. NEVER say "upload a file", "provide the data", "convert to CSV", or ask for Excel files
+7. The spreadsheet data is ALREADY AVAILABLE - see the headers and sample data above
+8. When user asks to "view data", "show spreadsheet", "엑셀 볼 수 있게", IMMEDIATELY create HTML using the actual column names
+9. Use SpreadsheetApp.getActiveSpreadsheet() - the spreadsheet is already bound to this script
+10. Create BOTH: Code.gs (with getData function) AND an HTML file (with table displaying the data)` : ''}
+
+APPS SCRIPT SPECIFIC KNOWLEDGE:
+- .gs files are server-side JavaScript (Google's V8 runtime)
+- .html files can include CSS/JS and use scriptlets: <?= ?>, <? ?>, <?!= ?>
+- Use google.script.run.functionName() to call server functions from HTML
+- SpreadsheetApp, DriveApp, GmailApp, etc. are available server-side
+- HtmlService.createHtmlOutputFromFile('filename') serves HTML pages
+
+EXAMPLE - Creating an HTML page to display spreadsheet data:
+User: "이 엑셀 내용을 볼 수 있는 HTML 코드 만들어주세요" or "Create an HTML page to display data"
+You: 
+✅ CORRECT: "I can see your spreadsheet '${spreadsheetContext.spreadsheetName || 'Spreadsheet'}' has columns: ${spreadsheetContext.sheets[0]?.headers?.join(', ') || 'various columns'}. I'll create the files now."
+   Then IMMEDIATELY call apps_script_write_file twice:
+   1. Create Code.gs with getData() function
+   2. Create DataView.html with table
+
+❌ WRONG: "Please upload your Excel file" or "I need you to provide the data first"
+   (The data is already available! Never ask for uploads!)
+
+Be proactive, write clean code, and always use the tools to actually create/modify files - don't just show code in chat.`;
 
     // Add context about current file
     const context = {
       availableTools,
+      systemInstruction,
       currentProject: projectId,
       currentProjectName: projectName,
       currentFile: selectedFile,
@@ -291,7 +535,10 @@ export default function AppsScriptEditor({
         role: string;
         content: string;
         toolCalls?: any[];
-      }> = [{ role: 'user', content: message }];
+      }> = [
+        { role: 'system', content: systemInstruction },
+        { role: 'user', content: message }
+      ];
       let allToolCalls: any[] = [];
       let maxIterations = 5;
       let finalContent = '';
@@ -343,6 +590,32 @@ export default function AppsScriptEditor({
                 if (toolCall.args.fileName === selectedFile) {
                   setFileContent(toolCall.args.content);
                 }
+                // Check if this is a new file (not in current files list)
+                const isNewFile = !files.some(f => f.name === toolCall.args.fileName);
+                if (isNewFile) {
+                  // Refresh file list to show the new file
+                  loadFiles();
+                }
+                break;
+              // Sheets tools
+              case 'sheets_get_range':
+                result = await callSheetsTool('sheets_get_range', {
+                  spreadsheetId: toolCall.args.spreadsheetId || spreadsheetContext.spreadsheetId,
+                  range: toolCall.args.range
+                });
+                break;
+              case 'sheets_get_headers':
+                result = await callSheetsTool('sheets_get_headers', {
+                  spreadsheetId: toolCall.args.spreadsheetId || spreadsheetContext.spreadsheetId,
+                  sheetName: toolCall.args.sheetName || 'Sheet1'
+                });
+                break;
+              case 'sheets_get_sample_data':
+                result = await callSheetsTool('sheets_get_sample_data', {
+                  spreadsheetId: toolCall.args.spreadsheetId || spreadsheetContext.spreadsheetId,
+                  sheetName: toolCall.args.sheetName || 'Sheet1',
+                  rows: toolCall.args.rows || 5
+                });
                 break;
               default:
                 result = { error: `Unknown tool: ${toolCall.name}` };
@@ -488,6 +761,61 @@ export default function AppsScriptEditor({
       );
     }
 
+    // Sheets tools
+    if (toolCall.name === 'sheets_get_range' || toolCall.name === 'sheets_get_headers' || toolCall.name === 'sheets_get_sample_data') {
+      let data: any = toolCall.result;
+      if (typeof data?.content?.[0]?.text === 'string') {
+        try {
+          data = JSON.parse(data.content[0].text);
+        } catch (e) {
+          // Keep original
+        }
+      }
+      
+      const headers = data?.headers || data?.values?.[0] || [];
+      const values = data?.values || data?.sampleData || [];
+      
+      return (
+        <div className="mt-2 p-2 bg-zinc-800 rounded text-xs">
+          <div className="flex items-center gap-1.5 mb-1.5 text-green-400 font-medium">
+            <Table2 className="w-3 h-3" />
+            {toolCall.name === 'sheets_get_headers' ? 'Headers' : `Data from ${data?.range || toolCall.args.range || 'Spreadsheet'}`}
+          </div>
+          {headers.length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="text-zinc-300 text-[10px] border-collapse">
+                <thead>
+                  <tr>
+                    {headers.map((h: string, i: number) => (
+                      <th key={i} className="border border-zinc-600 px-1 py-0.5 bg-zinc-700 font-medium">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                {values.length > 1 && (
+                  <tbody>
+                    {values.slice(1, 4).map((row: string[], rowIdx: number) => (
+                      <tr key={rowIdx}>
+                        {row.map((cell: string, cellIdx: number) => (
+                          <td key={cellIdx} className="border border-zinc-600 px-1 py-0.5">
+                            {String(cell).substring(0, 30)}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                )}
+              </table>
+              {values.length > 4 && (
+                <p className="text-zinc-500 mt-1">... and {values.length - 4} more rows</p>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
     return (
       <div className="mt-2 p-2 bg-zinc-800 rounded text-xs">
         <pre className="text-zinc-300 whitespace-pre-wrap">
@@ -509,9 +837,32 @@ export default function AppsScriptEditor({
             <h2 className="text-sm font-semibold text-white">
               {projectName || 'Apps Script Project'}
             </h2>
-            <p className="text-xs text-zinc-400 font-mono">
-              ID: {projectId}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-zinc-400 font-mono">
+                ID: {projectId}
+              </p>
+              {spreadsheetContext.spreadsheetId && !spreadsheetContext.isLoading && (
+                <a 
+                  href={spreadsheetContext.spreadsheetUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs text-green-400 hover:text-green-300 transition-colors"
+                  title={`Open ${spreadsheetContext.spreadsheetName || 'Spreadsheet'}`}
+                >
+                  <Table2 className="w-3 h-3" />
+                  <span className="max-w-[150px] truncate">
+                    {spreadsheetContext.spreadsheetName || 'Bound Spreadsheet'}
+                  </span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
+              {spreadsheetContext.isLoading && (
+                <span className="flex items-center gap-1 text-xs text-zinc-500">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Loading spreadsheet...
+                </span>
+              )}
+            </div>
           </div>
         </div>
         
@@ -669,10 +1020,13 @@ export default function AppsScriptEditor({
                   <div className="p-3 bg-violet-500/10 rounded-full mb-3">
                     <MessageSquare className="w-6 h-6 text-violet-400" />
                   </div>
-                  <p className="text-sm text-zinc-400 mb-1">No messages yet</p>
-                  <p className="text-xs text-zinc-500">
-                    Ask me to explain, refactor, or debug your Apps Script code
-                  </p>
+                  <p className="text-sm text-zinc-400 mb-2">Apps Script AI Assistant</p>
+                  <div className="text-xs text-zinc-500 space-y-1">
+                    <p>✨ "Create an HTML page to display data"</p>
+                    <p>🔧 "Add a function to get sheet data"</p>
+                    <p>🐛 "Debug this code"</p>
+                    <p>📝 "Explain what this does"</p>
+                  </div>
                 </div>
               ) : (
                 chatMessages.map((msg) => (
@@ -738,7 +1092,7 @@ export default function AppsScriptEditor({
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={handleChatKeyDown}
-                  placeholder="Ask about your code..."
+                  placeholder="Create HTML, modify code, ask questions..."
                   rows={1}
                   className="flex-1 bg-zinc-800 text-zinc-200 text-sm px-3 py-2 rounded-lg border border-zinc-600 focus:border-violet-500 focus:outline-none resize-none placeholder:text-zinc-500"
                 />

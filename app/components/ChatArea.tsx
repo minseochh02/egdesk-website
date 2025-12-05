@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { UploadedFile } from './FileUpload';
 import FileSystemBrowser from './FileSystemBrowser';
@@ -9,7 +9,8 @@ import { useMCPServices } from '@/hooks/useMCPServices';
 import { useMCPServiceTools } from '@/hooks/useMCPServiceTools';
 import { useUserServers } from '@/hooks/useUserServers';
 import { useServerHealth } from '@/hooks/useServerHealth';
-import { Server, RefreshCw, CheckCircle, Clock, Ban } from 'lucide-react';
+import { useConversations } from '@/hooks/useConversations';
+import { Server, RefreshCw, CheckCircle, Clock, Ban, Cloud, CloudOff } from 'lucide-react';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput';
 
@@ -70,6 +71,16 @@ export default function ChatArea({ tabId, onOpenProject }: ChatAreaProps) {
   // Apps Script Projects State
   const [appsScriptProjects, setAppsScriptProjects] = useState<any[]>([]);
   const [appsScriptServiceName, setAppsScriptServiceName] = useState<string | null>(null);
+
+  // Conversation persistence hook
+  const {
+    currentConversation,
+    saveMessage,
+    initializeForTab,
+    isConnected: isConversationConnected,
+    pendingCount,
+    isLoading: conversationLoading,
+  } = useConversations(selectedServer || '');
 
   // Fetch user's servers
   const { servers, loading: serversLoading, error: serversError, refresh: refreshServers } = useUserServers();
@@ -298,6 +309,24 @@ export default function ChatArea({ tabId, onOpenProject }: ChatAreaProps) {
     }
   }, [user, selectedServer, selectedServerName]);
 
+  // Initialize conversation for this tab when server is selected
+  useEffect(() => {
+    const initConversation = async () => {
+      if (selectedServer && user) {
+        try {
+          console.log(`💬 Initializing conversation for tab ${tabId}...`);
+          await initializeForTab(tabId);
+          console.log(`✅ Conversation initialized for tab ${tabId}`);
+        } catch (err) {
+          console.warn('⚠️ Failed to initialize conversation (offline mode):', err);
+          // Continue without persistence - messages will be queued
+        }
+      }
+    };
+
+    initConversation();
+  }, [selectedServer, user, tabId, initializeForTab]);
+
   const handleProjectClick = (project: any) => {
     if (onOpenProject && selectedServer && appsScriptServiceName) {
       let projectId = '';
@@ -350,6 +379,24 @@ export default function ChatArea({ tabId, onOpenProject }: ChatAreaProps) {
     setUploadedFiles([]);
     setIsTyping(true);
 
+    // Persist user message to desktop app (non-blocking, queued if offline)
+    if (currentConversation) {
+      saveMessage({
+        conversation_id: currentConversation.id,
+        role: 'user',
+        content: currentInput,
+        metadata: {
+          source: 'website',
+          tab_id: tabId,
+          files: currentFiles.map(f => ({
+            name: f.file.name,
+            type: f.file.type,
+            size: f.file.size
+          }))
+        }
+      }).catch(err => console.warn('Message will sync later:', err));
+    }
+
     try {
       // Build file information for AI (but don't upload yet)
       let fileInfo = '';
@@ -380,6 +427,20 @@ export default function ChatArea({ tabId, onOpenProject }: ChatAreaProps) {
 
       setMessages(prev => [...prev, assistantMessage]);
       setConnectionStatus('connected');
+
+      // Persist assistant message to desktop app (non-blocking, queued if offline)
+      if (currentConversation) {
+        saveMessage({
+          conversation_id: currentConversation.id,
+          role: 'assistant',
+          content: response.content,
+          metadata: {
+            source: 'website',
+            tab_id: tabId,
+            toolCalls: response.toolCalls // Embedded in metadata per design decision
+          }
+        }).catch(err => console.warn('Message will sync later:', err));
+      }
     } catch (error) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -390,6 +451,20 @@ export default function ChatArea({ tabId, onOpenProject }: ChatAreaProps) {
       };
       setMessages(prev => [...prev, errorMessage]);
       setConnectionStatus('error');
+
+      // Persist error message too
+      if (currentConversation) {
+        saveMessage({
+          conversation_id: currentConversation.id,
+          role: 'assistant',
+          content: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          metadata: {
+            source: 'website',
+            tab_id: tabId,
+            error: true
+          }
+        }).catch(err => console.warn('Error message will sync later:', err));
+      }
     } finally {
       setIsTyping(false);
       // Clear attached files after processing
@@ -1092,6 +1167,17 @@ Be proactive and helpful in interpreting user intent. If a command is ambiguous,
                     </button>
                   </div>
                 )}
+                {/* Conversation sync status */}
+                <div className="flex items-center gap-1.5" title={isConversationConnected ? 'Syncing to desktop' : `Offline (${pendingCount} pending)`}>
+                  {isConversationConnected ? (
+                    <Cloud className="w-3.5 h-3.5 text-green-500" />
+                  ) : (
+                    <CloudOff className="w-3.5 h-3.5 text-yellow-500" />
+                  )}
+                  {pendingCount > 0 && (
+                    <span className="text-xs text-yellow-500">{pendingCount}</span>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <button

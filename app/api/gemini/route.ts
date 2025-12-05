@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-3-pro-preview' });
 
     const systemPrompt = `🚨 CRITICAL INSTRUCTION - READ FIRST:
 When user says "download [filename]" with just a filename (not full path):
@@ -136,8 +136,27 @@ Be intelligent and use the right tools from the right services!`;
     // Build the full prompt with conversation history
     let prompt = systemPrompt + '\n\n';
     
+    // If a custom system instruction was provided in context, include it prominently
+    if (context?.systemInstruction) {
+      console.log('📋 Custom system instruction found, length:', context.systemInstruction.length);
+      console.log('📋 First 500 chars:', context.systemInstruction.substring(0, 500));
+      prompt += `═══════════════════════════════════════════════════════════════════════════
+CUSTOM SYSTEM INSTRUCTION (HIGHEST PRIORITY - FOLLOW THESE RULES):
+═══════════════════════════════════════════════════════════════════════════
+${context.systemInstruction}
+═══════════════════════════════════════════════════════════════════════════
+
+`;
+    } else {
+      console.log('⚠️ No custom system instruction in context!');
+      console.log('📋 Context keys:', context ? Object.keys(context) : 'no context');
+    }
+    
     for (const msg of conversationHistory) {
-      if (msg.role === 'user') {
+      if (msg.role === 'system') {
+        // Handle system messages from conversation history
+        prompt += `[SYSTEM INSTRUCTION]\n${msg.content}\n\n`;
+      } else if (msg.role === 'user') {
         prompt += `User: ${msg.content}\n\n`;
       } else if (msg.role === 'assistant') {
         prompt += `Assistant: ${msg.content}\n\n`;
