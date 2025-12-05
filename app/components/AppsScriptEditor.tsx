@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useMCPTools } from '@/hooks/useMCPTools';
+import { useConversations, ConversationMessage } from '@/hooks/useConversations';
+import { useAuth } from '@/contexts/AuthContext';
 import { 
   Code, 
   FileCode, 
@@ -18,7 +20,13 @@ import {
   Sparkles,
   User,
   Bot,
-  Table2
+  Table2,
+  Cloud,
+  CloudOff,
+  Upload,
+  Download,
+  Play,
+  History
 } from 'lucide-react';
 
 interface AppsScriptEditorProps {
@@ -75,8 +83,15 @@ export default function AppsScriptEditor({
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPushing, setIsPushing] = useState(false);
+  const [isPulling, setIsPulling] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
+  const [runResult, setRunResult] = useState<{ success: boolean; result?: any; error?: string; logs?: string[] } | null>(null);
+  const [showRunDialog, setShowRunDialog] = useState(false);
+  const [functionToRun, setFunctionToRun] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'pushed' | 'pulled' | 'error'>('idle');
 
   // Chat State
   const [isChatOpen, setIsChatOpen] = useState(true);
@@ -88,6 +103,22 @@ export default function AppsScriptEditor({
   // MCP Hooks
   const { callTool, loading: mcpLoading } = useMCPTools(serverKey, serviceName);
   const { callTool: callSheetsTool } = useMCPTools(serverKey, 'sheets');
+
+  // Auth context
+  const { user } = useAuth();
+
+  // Conversations hook for persistence
+  const {
+    currentConversation,
+    messages: persistedMessages,
+    isLoading: conversationsLoading,
+    isConnected: conversationsConnected,
+    pendingCount,
+    createConversation,
+    loadConversation,
+    saveMessage,
+    listConversations,
+  } = useConversations(serverKey);
 
   // Spreadsheet context state
   const [spreadsheetContext, setSpreadsheetContext] = useState<SpreadsheetContext>({
@@ -106,6 +137,58 @@ export default function AppsScriptEditor({
   useEffect(() => {
     loadSpreadsheetContext();
   }, [projectId, serverKey]);
+
+  // Initialize/load conversation for this project
+  useEffect(() => {
+    const initConversation = async () => {
+      if (!user?.email || !serverKey) return;
+
+      try {
+        // Look for existing conversation for this project+user
+        const conversations = await listConversations();
+        const existing = conversations.find(c => {
+          const meta = c.metadata as { project_id?: string; user_email?: string } | undefined;
+          return meta?.project_id === projectId && meta?.user_email === user.email;
+        });
+
+        if (existing) {
+          console.log('📂 Loading existing conversation for project:', projectId);
+          await loadConversation(existing.id);
+        } else {
+          // Create new conversation for this project
+          console.log('📝 Creating new conversation for project:', projectId);
+          const conv = await createConversation(`Apps Script: ${projectName || projectId}`, {
+            project_id: projectId,
+            project_name: projectName,
+            user_email: user.email,
+            source: 'appsscript-editor',
+          });
+          if (conv) {
+            await loadConversation(conv.id);
+          }
+        }
+      } catch (err: any) {
+        // Silently fail - conversations service might not be enabled
+        console.warn('Conversation persistence unavailable:', err?.message || err);
+      }
+    };
+
+    initConversation();
+  }, [projectId, user?.email, serverKey]);
+
+  // Sync persisted messages to local state
+  useEffect(() => {
+    if (persistedMessages.length > 0) {
+      const mapped: ChatMessage[] = persistedMessages.map(msg => ({
+        id: msg.id,
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content || '',
+        timestamp: new Date(msg.timestamp),
+        toolCalls: msg.metadata?.toolCalls,
+      }));
+      setChatMessages(mapped);
+    }
+  }, [persistedMessages]);
 
   const loadSpreadsheetContext = async () => {
     setSpreadsheetContext(prev => ({ ...prev, isLoading: true, error: undefined }));
@@ -353,6 +436,142 @@ export default function AppsScriptEditor({
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault();
       handleSave();
+    }
+  };
+
+  const handlePushToGoogle = async () => {
+    if (!confirm('Push local changes to Google Apps Script?\n\nThis will overwrite the cloud version with your local changes.')) {
+      return;
+    }
+
+    setIsPushing(true);
+    setSyncStatus('idle');
+    setError(null);
+
+    try {
+      console.log(`⬆️ Pushing to Google Apps Script...`);
+      const result = await callTool('apps_script_push_to_google', { projectId });
+
+      if (result && !result.error) {
+        setSyncStatus('pushed');
+        setTimeout(() => setSyncStatus('idle'), 3000);
+      } else {
+        setError(result?.error || 'Failed to push to Google');
+        setSyncStatus('error');
+      }
+    } catch (err) {
+      console.error('Error pushing to Google:', err);
+      setError(err instanceof Error ? err.message : 'Error pushing to Google');
+      setSyncStatus('error');
+    } finally {
+      setIsPushing(false);
+    }
+  };
+
+  const handlePullFromGoogle = async () => {
+    if (!confirm('Pull latest from Google Apps Script?\n\nThis will overwrite your local changes with the cloud version.')) {
+      return;
+    }
+
+    setIsPulling(true);
+    setSyncStatus('idle');
+    setError(null);
+
+    try {
+      console.log(`⬇️ Pulling from Google Apps Script...`);
+      const result = await callTool('apps_script_pull_from_google', { projectId });
+
+      if (result && !result.error) {
+        setSyncStatus('pulled');
+        // Refresh local files to show updated content
+        await loadFiles();
+        // Force reload the selected file if any
+        if (selectedFile) {
+          const currentFile = selectedFile;
+          setSelectedFile(null); // Clear selection to force reload
+          setFileContent('');
+          // Re-select after a tick to trigger full reload
+          setTimeout(() => handleFileSelect(currentFile), 100);
+        }
+        setTimeout(() => setSyncStatus('idle'), 3000);
+      } else {
+        setError(result?.error || 'Failed to pull from Google');
+        setSyncStatus('error');
+      }
+    } catch (err) {
+      console.error('Error pulling from Google:', err);
+      setError(err instanceof Error ? err.message : 'Error pulling from Google');
+      setSyncStatus('error');
+    } finally {
+      setIsPulling(false);
+    }
+  };
+
+  const handleRunFunction = async () => {
+    if (!functionToRun.trim()) {
+      setError('Please enter a function name');
+      return;
+    }
+
+    setIsRunning(true);
+    setRunResult(null);
+    setError(null);
+
+    try {
+      console.log(`▶️ Running function: ${functionToRun}...`);
+      const result = await callTool('apps_script_run_function', { 
+        projectId, 
+        functionName: functionToRun.trim() 
+      });
+
+      if (result) {
+        // Parse the result if it's a string
+        let parsed = result;
+        if (result.content?.[0]?.text) {
+          try {
+            parsed = JSON.parse(result.content[0].text);
+          } catch {
+            parsed = result;
+          }
+        }
+        setRunResult(parsed);
+        if (!parsed.success) {
+          setError(parsed.error || 'Function execution failed');
+        }
+      }
+    } catch (err) {
+      console.error('Error running function:', err);
+      setError(err instanceof Error ? err.message : 'Error running function');
+      setRunResult({ success: false, error: err instanceof Error ? err.message : 'Unknown error' });
+    } finally {
+      setIsRunning(false);
+    }
+  };
+
+  const handleCreateVersion = async () => {
+    const description = prompt('Enter version description (optional):');
+    
+    try {
+      console.log(`📸 Creating version...`);
+      const result = await callTool('apps_script_create_version', { 
+        projectId, 
+        description: description || undefined 
+      });
+
+      if (result) {
+        let parsed = result;
+        if (result.content?.[0]?.text) {
+          try {
+            parsed = JSON.parse(result.content[0].text);
+          } catch {
+            parsed = result;
+          }
+        }
+        alert(`✅ Created version ${parsed.versionNumber}\n\n${parsed.description || ''}`);
+      }
+    } catch (err) {
+      console.error('Error creating version:', err);
+      setError(err instanceof Error ? err.message : 'Error creating version');
     }
   };
 
@@ -676,6 +895,22 @@ Be proactive, write clean code, and always use the tools to actually create/modi
     setChatInput('');
     setIsChatLoading(true);
 
+    // Save user message to MCP service (fire-and-forget)
+    if (currentConversation?.id) {
+      saveMessage({
+        conversation_id: currentConversation.id,
+        role: 'user',
+        content: userMessage.content,
+        metadata: {
+          source: 'appsscript-editor',
+          project_id: projectId,
+          project_name: projectName,
+          user_email: user?.email,
+          current_file: selectedFile || undefined,
+        }
+      }).catch(err => console.warn('Failed to save user message:', err));
+    }
+
     try {
       const response = await processUserMessage(chatInput.trim());
       
@@ -688,6 +923,22 @@ Be proactive, write clean code, and always use the tools to actually create/modi
       };
       
       setChatMessages(prev => [...prev, assistantMessage]);
+
+      // Save assistant message to MCP service (fire-and-forget)
+      if (currentConversation?.id) {
+        saveMessage({
+          conversation_id: currentConversation.id,
+          role: 'assistant',
+          content: response.content,
+          metadata: {
+            source: 'appsscript-editor',
+            project_id: projectId,
+            project_name: projectName,
+            user_email: user?.email,
+            toolCalls: response.toolCalls,
+          }
+        }).catch(err => console.warn('Failed to save assistant message:', err));
+      }
     } catch (err) {
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -838,9 +1089,9 @@ Be proactive, write clean code, and always use the tools to actually create/modi
               {projectName || 'Apps Script Project'}
             </h2>
             <div className="flex items-center gap-2">
-              <p className="text-xs text-zinc-400 font-mono">
-                ID: {projectId}
-              </p>
+            <p className="text-xs text-zinc-400 font-mono">
+              ID: {projectId}
+            </p>
               {spreadsheetContext.spreadsheetId && !spreadsheetContext.isLoading && (
                 <a 
                   href={spreadsheetContext.spreadsheetUrl}
@@ -878,7 +1129,7 @@ Be proactive, write clean code, and always use the tools to actually create/modi
             onClick={handleSave}
             disabled={!selectedFile || isSaving || isLoadingContent}
             className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Save (Cmd/Ctrl+S)"
+            title="Save locally (Cmd/Ctrl+S)"
           >
             {isSaving ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -887,6 +1138,77 @@ Be proactive, write clean code, and always use the tools to actually create/modi
             )}
             Save
           </button>
+          
+          <div className="w-px h-5 bg-zinc-700 mx-1" />
+
+          {/* Google Sync Buttons */}
+          <button
+            onClick={handlePushToGoogle}
+            disabled={isPushing || isPulling}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-green-600 hover:bg-green-500 text-white text-xs font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Push local changes to Google Apps Script"
+          >
+            {isPushing ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Upload className="w-3.5 h-3.5" />
+            )}
+            Push
+          </button>
+          
+          <button
+            onClick={handlePullFromGoogle}
+            disabled={isPushing || isPulling}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Pull latest from Google Apps Script"
+          >
+            {isPulling ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Download className="w-3.5 h-3.5" />
+            )}
+            Pull
+          </button>
+
+          {syncStatus === 'pushed' && (
+            <div className="flex items-center gap-1 text-green-400 text-xs animate-in fade-in">
+              <CheckCircle className="w-3.5 h-3.5" />
+              Pushed!
+            </div>
+          )}
+          {syncStatus === 'pulled' && (
+            <div className="flex items-center gap-1 text-amber-400 text-xs animate-in fade-in">
+              <CheckCircle className="w-3.5 h-3.5" />
+              Pulled!
+            </div>
+          )}
+
+          <div className="w-px h-5 bg-zinc-700 mx-1" />
+
+          {/* Run & Version Buttons */}
+          <button
+            onClick={() => setShowRunDialog(true)}
+            disabled={isRunning}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Run a function"
+          >
+            {isRunning ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Play className="w-3.5 h-3.5" />
+            )}
+            Run
+          </button>
+
+          <button
+            onClick={handleCreateVersion}
+            className="p-1.5 hover:bg-zinc-700 rounded transition-colors text-zinc-400 hover:text-white"
+            title="Create Version (Snapshot)"
+          >
+            <History className="w-4 h-4" />
+          </button>
+
+          <div className="w-px h-5 bg-zinc-700 mx-1" />
           
           <button
             onClick={loadFiles}
@@ -1009,7 +1331,21 @@ Be proactive, write clean code, and always use the tools to actually create/modi
               </div>
               <div className="flex-1">
                 <h3 className="text-sm font-semibold text-white">AI Assistant</h3>
+                <div className="flex items-center gap-2">
                 <p className="text-[10px] text-zinc-500">Ask about your code</p>
+                  {conversationsConnected ? (
+                    <span className="flex items-center gap-1 text-[10px] text-green-400">
+                      <Cloud className="w-3 h-3" />
+                      Synced
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-[10px] text-yellow-400">
+                      <CloudOff className="w-3 h-3" />
+                      Offline
+                      {pendingCount > 0 && ` (${pendingCount})`}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1111,6 +1447,111 @@ Be proactive, write clean code, and always use the tools to actually create/modi
           </div>
         )}
       </div>
+
+      {/* Run Function Dialog */}
+      {showRunDialog && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-zinc-800 rounded-xl border border-zinc-700 shadow-2xl w-full max-w-md mx-4">
+            <div className="px-4 py-3 border-b border-zinc-700 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                <Play className="w-4 h-4 text-violet-400" />
+                Run Function
+              </h3>
+              <button
+                onClick={() => {
+                  setShowRunDialog(false);
+                  setRunResult(null);
+                  setFunctionToRun('');
+                }}
+                className="text-zinc-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="block text-xs text-zinc-400 mb-1.5">Function Name</label>
+                <input
+                  type="text"
+                  value={functionToRun}
+                  onChange={(e) => setFunctionToRun(e.target.value)}
+                  placeholder="e.g., doGet, myFunction, main"
+                  className="w-full bg-zinc-900 border border-zinc-600 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:border-violet-500 focus:outline-none"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !isRunning) {
+                      handleRunFunction();
+                    }
+                  }}
+                  autoFocus
+                />
+                <p className="text-[10px] text-zinc-500 mt-1">
+                  Runs against the most recent saved version (devMode)
+                </p>
+              </div>
+
+              {runResult && (
+                <div className={`p-3 rounded-lg text-xs ${
+                  runResult.success 
+                    ? 'bg-green-500/10 border border-green-500/30' 
+                    : 'bg-red-500/10 border border-red-500/30'
+                }`}>
+                  <div className={`font-medium mb-1 ${runResult.success ? 'text-green-400' : 'text-red-400'}`}>
+                    {runResult.success ? '✅ Success' : '❌ Error'}
+                  </div>
+                  {runResult.success ? (
+                    <pre className="text-zinc-300 whitespace-pre-wrap overflow-auto max-h-40">
+                      {runResult.result !== undefined 
+                        ? JSON.stringify(runResult.result, null, 2) 
+                        : '(no return value)'}
+                    </pre>
+                  ) : (
+                    <p className="text-red-300">{runResult.error}</p>
+                  )}
+                  {runResult.logs && runResult.logs.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-zinc-700">
+                      <div className="text-zinc-400 mb-1">Logs:</div>
+                      {runResult.logs.map((log, i) => (
+                        <div key={i} className="text-zinc-300">{log}</div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setShowRunDialog(false);
+                    setRunResult(null);
+                    setFunctionToRun('');
+                  }}
+                  className="flex-1 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-white text-sm rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleRunFunction}
+                  disabled={!functionToRun.trim() || isRunning}
+                  className="flex-1 px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isRunning ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Running...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4" />
+                      Run
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

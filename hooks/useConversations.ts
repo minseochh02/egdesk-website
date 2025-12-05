@@ -18,13 +18,17 @@ export interface ToolCall {
 }
 
 export interface MessageMetadata {
-  source: 'website' | 'desktop';
+  source: 'website' | 'desktop' | 'appsscript-editor';
   tab_id?: string;
   user_email?: string;
   toolCalls?: ToolCall[];
   files?: Array<{ name: string; type: string; size: number }>;
   projects?: any[];
   error?: boolean;
+  // AppsScript-specific fields
+  project_id?: string;
+  project_name?: string;
+  current_file?: string;
 }
 
 export interface ConversationMessage {
@@ -43,9 +47,12 @@ export interface Conversation {
   created_at: string;
   updated_at: string;
   metadata?: {
-    source: 'website' | 'desktop';
+    source: 'website' | 'desktop' | 'appsscript-editor';
     user_email: string;
     tab_id?: string;
+    // AppsScript-specific fields
+    project_id?: string;
+    project_name?: string;
   };
 }
 

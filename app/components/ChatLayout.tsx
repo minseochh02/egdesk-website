@@ -2,16 +2,37 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserServers } from '@/hooks/useUserServers';
+import { Conversation } from '@/hooks/useConversations';
 import Sidebar from './Sidebar';
 import TabWindow, { Tab } from './TabWindow';
 import SignInPage from './SignInPage';
 
 export default function ChatLayout() {
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
+  const { servers } = useUserServers();
   const [activeTab, setActiveTab] = useState('chat-1');
   const [tabs, setTabs] = useState<Tab[]>([
     { id: 'chat-1', title: 'Chat 1', active: true, type: 'chat' },
   ]);
+  const [activeConversationId, setActiveConversationId] = useState<string | undefined>();
+
+  // Get primary server key for opening projects
+  const primaryServerKey = servers[0]?.server_key || '';
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      // Reset state on sign out
+      setTabs([
+        { id: 'chat-1', title: 'Chat 1', active: true, type: 'chat' },
+      ]);
+      setActiveTab('chat-1');
+      setActiveConversationId(undefined);
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
 
   const createNewTab = () => {
     const newId = `chat-${Date.now()}`; // Use timestamp to avoid conflicts
@@ -72,6 +93,50 @@ export default function ChatLayout() {
     setTabs(tabs.map(tab => ({ ...tab, active: tab.id === id })));
   };
 
+  const handleSelectConversation = (conversation: Conversation) => {
+    setActiveConversationId(conversation.id);
+    
+    const meta = conversation.metadata as { 
+      source?: string; 
+      project_id?: string; 
+      project_name?: string; 
+    } | undefined;
+
+    // If it's an AppsScript conversation, open the project tab
+    if (meta?.source === 'appsscript-editor' && meta?.project_id) {
+      handleOpenProject(
+        meta.project_id,
+        meta.project_name || conversation.title,
+        primaryServerKey,
+        'apps-script'
+      );
+      return;
+    }
+
+    // Otherwise, it's a regular chat - find or create a tab for it
+    const tabId = `conversation-${conversation.id}`;
+    const existingTab = tabs.find(t => t.id === tabId);
+    
+    if (existingTab) {
+      switchTab(tabId);
+    } else {
+      // Create a new chat tab for this conversation
+      setTabs([
+        ...tabs.map(tab => ({ ...tab, active: false })),
+        { 
+          id: tabId, 
+          title: conversation.title, 
+          active: true, 
+          type: 'chat',
+          data: {
+            conversationId: conversation.id
+          }
+        }
+      ]);
+      setActiveTab(tabId);
+    }
+  };
+
   // Show loading state
   if (loading) {
     return (
@@ -92,7 +157,12 @@ export default function ChatLayout() {
   // Show main chat interface if authenticated
   return (
     <div className="flex h-screen w-full overflow-hidden bg-zinc-900">
-      <Sidebar onNewChat={createNewTab} />
+      <Sidebar 
+        onNewChat={createNewTab} 
+        onSelectConversation={handleSelectConversation}
+        activeConversationId={activeConversationId}
+        onSignOut={handleSignOut}
+      />
       <TabWindow 
         tabs={tabs}
         activeTab={activeTab}

@@ -16,6 +16,7 @@ export interface Tab {
     projectName?: string;
     serverKey?: string;
     serviceName?: string;
+    conversationId?: string;
   };
 }
 
