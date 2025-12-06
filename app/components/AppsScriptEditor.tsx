@@ -737,7 +737,17 @@ You:
 ❌ WRONG: "Please upload your Excel file" or "I need you to provide the data first"
    (The data is already available! Never ask for uploads!)
 
-Be proactive, write clean code, and always use the tools to actually create/modify files - don't just show code in chat.`;
+Be proactive, write clean code, and always use the tools to actually create/modify files - don't just show code in chat.
+
+🚨 OUTPUT FORMAT (CRITICAL):
+You MUST respond with valid JSON only. No markdown code fences.
+{
+  "content": "Your response (escape quotes with \\", newlines with \\n)",
+  "toolCalls": [{"name": "tool_name", "args": {"key": "value"}}]
+}
+- Use toolCalls: [] when no tools needed
+- Keep content SHORT when calling tools
+- NEVER include unescaped newlines or quotes in JSON strings`;
 
     // Add context about current file
     const context = {

@@ -120,16 +120,28 @@ When the user asks about "this code" or "the code", they are referring to the fi
 You can use apps_script_read_file to read other files, or apps_script_write_file to make changes.
 ` : ''}
 
-Response format (JSON):
+🚨 CRITICAL: RESPONSE FORMAT (MUST BE VALID JSON):
+You MUST respond with a valid JSON object. No markdown, no code fences, just pure JSON.
+
 {
-  "content": "Your helpful response to the user",
+  "content": "Your response text here (escape quotes and newlines properly)",
+  "toolCalls": []
+}
+
+Or with tool calls:
+{
+  "content": "Brief explanation of what you're doing",
   "toolCalls": [
-    {
-      "name": "tool_name",
-      "args": { "param1": "value1", "param2": "value2" }
-    }
+    {"name": "tool_name", "args": {"param1": "value1"}}
   ]
 }
+
+JSON RULES:
+- Escape all quotes inside strings with \\"
+- Escape newlines with \\n
+- NO trailing commas
+- toolCalls must be an array (use [] if no tools needed)
+- Keep "content" concise when calling tools
 
 Be intelligent and use the right tools from the right services!`;
 
@@ -173,21 +185,89 @@ ${context.systemInstruction}
     const text = response.text();
     console.log('✅ Gemini response received:', text.substring(0, 200) + '...');
 
-    // Try to parse the JSON response
+    // Try to parse the JSON response with robust error handling
     try {
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        console.log('📤 Returning parsed response with', parsed.toolCalls?.length || 0, 'tool calls');
-        return NextResponse.json(parsed);
+        let jsonStr = jsonMatch[0];
+        
+        // Try direct parse first
+        try {
+          const parsed = JSON.parse(jsonStr);
+          console.log('📤 Returning parsed response with', parsed.toolCalls?.length || 0, 'tool calls');
+          return NextResponse.json(parsed);
+        } catch (directParseError) {
+          console.log('⚠️ Direct JSON parse failed, attempting repair...');
+          
+          // Common JSON repairs
+          // 1. Remove trailing commas before } or ]
+          jsonStr = jsonStr.replace(/,\s*([\}\]])/g, '$1');
+          
+          // 2. Fix unescaped newlines in strings (common in code content)
+          // This is tricky - we need to escape newlines that are inside string values
+          // Try to identify if the error is from unescaped content in "content" field
+          
+          // 3. Try to extract just the essential fields
+          const contentMatch = jsonStr.match(/"content"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+          const toolCallsMatch = jsonStr.match(/"toolCalls"\s*:\s*(\[[\s\S]*?\])/);
+          
+          if (contentMatch) {
+            // Build a clean JSON object
+            const cleanContent = contentMatch[1];
+            const toolCalls = toolCallsMatch ? toolCallsMatch[1] : '[]';
+            
+            try {
+              const cleanJson = `{"content": "${cleanContent}", "toolCalls": ${toolCalls}}`;
+              const parsed = JSON.parse(cleanJson);
+              console.log('📤 Returning repaired JSON with', parsed.toolCalls?.length || 0, 'tool calls');
+              return NextResponse.json(parsed);
+            } catch (cleanError) {
+              // If even clean extraction fails, try one more approach
+              console.log('⚠️ Clean extraction failed, trying lenient parse...');
+            }
+          }
+          
+          // 4. Last resort: Try to fix by truncating at a valid point
+          // Find the last valid closing brace that balances
+          let braceCount = 0;
+          let lastValidEnd = -1;
+          for (let i = 0; i < jsonStr.length; i++) {
+            if (jsonStr[i] === '{') braceCount++;
+            else if (jsonStr[i] === '}') {
+              braceCount--;
+              if (braceCount === 0) {
+                lastValidEnd = i;
+              }
+            }
+          }
+          
+          if (lastValidEnd > 0) {
+            try {
+              const truncated = jsonStr.substring(0, lastValidEnd + 1);
+              const parsed = JSON.parse(truncated);
+              console.log('📤 Returning truncated JSON with', parsed.toolCalls?.length || 0, 'tool calls');
+              return NextResponse.json(parsed);
+            } catch (truncateError) {
+              // Continue to fallback
+            }
+          }
+        }
       }
     } catch (parseError) {
       console.error('Failed to parse Gemini response as JSON:', parseError);
     }
 
-    // Fallback: return the text as content
+    // Fallback: return the text as content (strip any partial JSON)
+    let cleanText = text;
+    // If there's a content field we can extract, use just that
+    const contentExtract = text.match(/"content"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+    if (contentExtract) {
+      cleanText = contentExtract[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+    }
+    
+    console.log('📤 Returning fallback text response');
     return NextResponse.json({
-      content: text,
+      content: cleanText,
       toolCalls: []
     });
 
