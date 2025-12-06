@@ -118,9 +118,13 @@ export default function Sidebar({ onNewChat, onSelectConversation, activeConvers
         <div className="flex items-center gap-2">
           {/* Connection status */}
           {isConnected ? (
-            <Cloud className="w-4 h-4 text-green-400" title="Connected" />
+            <span title="Connected">
+              <Cloud className="w-4 h-4 text-green-400" />
+            </span>
           ) : (
-            <CloudOff className="w-4 h-4 text-yellow-400" title="Offline" />
+            <span title="Offline">
+              <CloudOff className="w-4 h-4 text-yellow-400" />
+            </span>
           )}
           <button
             onClick={onNewChat}
