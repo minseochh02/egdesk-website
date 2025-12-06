@@ -617,6 +617,41 @@ export default function AppsScriptEditor({
           content: 'string (The complete file content to write)'
         }
       },
+      // Deployment tools
+      {
+        name: 'apps_script_list_deployments',
+        description: 'List all deployments of the Apps Script project. Shows web app URLs, deployment IDs, and configuration.',
+        parameters: { projectId: 'string (The project ID)' }
+      },
+      {
+        name: 'apps_script_create_version',
+        description: 'Create a new version (snapshot) of the Apps Script project. Versions are required before creating deployments.',
+        parameters: {
+          projectId: 'string (The project ID)',
+          description: 'string (Optional description for the version)'
+        }
+      },
+      {
+        name: 'apps_script_create_deployment',
+        description: 'Deploy the Apps Script project as a web app. Creates a new version if none specified. Returns the web app URL that users can access.',
+        parameters: {
+          projectId: 'string (The project ID)',
+          versionNumber: 'number (Optional - version number to deploy, creates new version if not provided)',
+          description: 'string (Optional description for the deployment)',
+          access: 'string (Who can access: "MYSELF", "DOMAIN", "ANYONE", "ANYONE_ANONYMOUS")',
+          executeAs: 'string (Who runs the script: "USER_ACCESSING" or "USER_DEPLOYING")'
+        }
+      },
+      {
+        name: 'apps_script_update_deployment',
+        description: 'Update an existing deployment to use a new version. Useful for publishing code changes to an existing web app URL.',
+        parameters: {
+          projectId: 'string (The project ID)',
+          deploymentId: 'string (The deployment ID to update)',
+          versionNumber: 'number (Optional - new version number, creates new version if not provided)',
+          description: 'string (Optional new description)'
+        }
+      },
       // Sheets tools (only if spreadsheet is bound)
       ...(spreadsheetContext.spreadsheetId ? [
         {
@@ -703,7 +738,22 @@ CAPABILITIES:
 2. **Modify existing files**: Use apps_script_write_file to update code
 3. **Read files**: Use apps_script_read_file to examine code before suggesting changes
 4. **List project files**: Use apps_script_list_files to see all files in the project
-${spreadsheetContext.spreadsheetId ? `5. **Read spreadsheet data**: Use sheets_get_range or sheets_get_headers to get live data` : ''}
+5. **Deploy as Web App**: Use apps_script_create_deployment to deploy the script and get a public URL
+6. **List deployments**: Use apps_script_list_deployments to see existing deployments and their URLs
+7. **Update deployment**: Use apps_script_update_deployment to update an existing deployment with new code
+8. **Create versions**: Use apps_script_create_version to create a snapshot before deployment
+${spreadsheetContext.spreadsheetId ? `9. **Read spreadsheet data**: Use sheets_get_range or sheets_get_headers to get live data` : ''}
+
+DEPLOYMENT INSTRUCTIONS:
+When user asks to "deploy", "get a URL", "make it accessible", "배포해줘":
+1. First ensure the code has a doGet() or doPost() function for web apps
+2. ALWAYS use apps_script_create_deployment (NOT update_deployment) - this creates a NEW web app URL
+3. Use access: "ANYONE" for public access, or "MYSELF" for private access
+4. The tool will automatically create a new version and deploy it
+5. Return the webAppUrl to the user - this is the URL they can access
+
+⚠️ NEVER use apps_script_update_deployment unless updating a SPECIFIC non-HEAD deployment ID
+   The HEAD deployment is READ-ONLY and cannot be modified!
 
 IMPORTANT BEHAVIORS:
 1. When user asks to "create HTML" or "make a page", IMMEDIATELY create the file using apps_script_write_file
@@ -825,6 +875,35 @@ You MUST respond with valid JSON only. No markdown code fences.
                   // Refresh file list to show the new file
                   loadFiles();
                 }
+                break;
+              // Deployment tools
+              case 'apps_script_list_deployments':
+                result = await callTool('apps_script_list_deployments', {
+                  projectId: toolCall.args.projectId || projectId
+                });
+                break;
+              case 'apps_script_create_version':
+                result = await callTool('apps_script_create_version', {
+                  projectId: toolCall.args.projectId || projectId,
+                  description: toolCall.args.description
+                });
+                break;
+              case 'apps_script_create_deployment':
+                result = await callTool('apps_script_create_deployment', {
+                  projectId: toolCall.args.projectId || projectId,
+                  versionNumber: toolCall.args.versionNumber,
+                  description: toolCall.args.description,
+                  access: toolCall.args.access || 'ANYONE',
+                  executeAs: toolCall.args.executeAs || 'USER_DEPLOYING'
+                });
+                break;
+              case 'apps_script_update_deployment':
+                result = await callTool('apps_script_update_deployment', {
+                  projectId: toolCall.args.projectId || projectId,
+                  deploymentId: toolCall.args.deploymentId,
+                  versionNumber: toolCall.args.versionNumber,
+                  description: toolCall.args.description
+                });
                 break;
               // Sheets tools
               case 'sheets_get_range':
@@ -1018,6 +1097,124 @@ You MUST respond with valid JSON only. No markdown code fences.
             <CheckCircle className="w-3 h-3" />
             Saved {toolCall.args.fileName}
           </div>
+        </div>
+      );
+    }
+
+    // Deployment tools
+    if (toolCall.name === 'apps_script_create_deployment' || toolCall.name === 'apps_script_update_deployment') {
+      let data: any = toolCall.result;
+      
+      // Parse MCP content format
+      if (typeof data?.content?.[0]?.text === 'string') {
+        try {
+          data = JSON.parse(data.content[0].text);
+        } catch (e) {
+          // Keep original
+        }
+      }
+      
+      // Extract deployment object and URL from various possible locations
+      const deployment = data?.deployment || data;
+      let webAppUrl = deployment?.webAppUrl 
+        || deployment?.entryPoints?.find((e: any) => e.webApp?.url)?.webApp?.url
+        || data?.webAppUrl;
+      
+      // Also try to extract URL from message string if present
+      if (!webAppUrl && data?.message) {
+        const urlMatch = data.message.match(/https:\/\/script\.google\.com\/[^\s"]+/);
+        if (urlMatch) {
+          webAppUrl = urlMatch[0];
+        }
+      }
+      
+      const deploymentId = deployment?.deploymentId || data?.deploymentId;
+      
+      console.log('🚀 Deployment result:', { data, deployment, webAppUrl, deploymentId });
+      
+      return (
+        <div className="mt-2 p-2 bg-zinc-800 rounded text-xs">
+          <div className="flex items-center gap-1.5 mb-1.5 text-violet-400 font-medium">
+            <ExternalLink className="w-3 h-3" />
+            {toolCall.name === 'apps_script_create_deployment' ? '🚀 Deployed!' : '✅ Deployment Updated'}
+          </div>
+          {webAppUrl ? (
+            <div className="space-y-1">
+              <p className="text-zinc-400">Web App URL:</p>
+              <a 
+                href={webAppUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 break-all underline flex items-center gap-1"
+              >
+                <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                {webAppUrl}
+              </a>
+            </div>
+          ) : (
+            <p className="text-zinc-400">Deployment ID: {deploymentId || 'Unknown'}</p>
+          )}
+        </div>
+      );
+    }
+
+    if (toolCall.name === 'apps_script_list_deployments') {
+      let data: any = toolCall.result;
+      if (typeof data?.content?.[0]?.text === 'string') {
+        try {
+          data = JSON.parse(data.content[0].text);
+        } catch (e) {
+          // Keep original
+        }
+      }
+      const deployments = data?.deployments || data || [];
+      
+      return (
+        <div className="mt-2 p-2 bg-zinc-800 rounded text-xs">
+          <div className="flex items-center gap-1.5 mb-1.5 text-violet-400 font-medium">
+            <Cloud className="w-3 h-3" />
+            Deployments ({Array.isArray(deployments) ? deployments.length : 0})
+          </div>
+          <div className="space-y-2 max-h-40 overflow-y-auto">
+            {(Array.isArray(deployments) ? deployments : []).map((dep: any, idx: number) => {
+              const webUrl = dep.entryPoints?.find((e: any) => e.webApp?.url)?.webApp?.url;
+              return (
+                <div key={idx} className="p-1.5 bg-zinc-900 rounded">
+                  <p className="text-zinc-300 font-mono text-[10px]">{dep.deploymentId}</p>
+                  {dep.description && <p className="text-zinc-500">{dep.description}</p>}
+                  {webUrl && (
+                    <a href={webUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 text-[10px] break-all">
+                      {webUrl}
+                    </a>
+                  )}
+                </div>
+              );
+            })}
+            {(!deployments || deployments.length === 0) && (
+              <p className="text-zinc-500">No deployments yet</p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    if (toolCall.name === 'apps_script_create_version') {
+      let data: any = toolCall.result;
+      if (typeof data?.content?.[0]?.text === 'string') {
+        try {
+          data = JSON.parse(data.content[0].text);
+        } catch (e) {
+          // Keep original
+        }
+      }
+      
+      return (
+        <div className="mt-2 p-2 bg-zinc-800 rounded text-xs">
+          <div className="flex items-center gap-1.5 text-amber-400 font-medium">
+            <History className="w-3 h-3" />
+            Created Version {data?.versionNumber || data?.version?.versionNumber || '?'}
+          </div>
+          {data?.description && <p className="text-zinc-400 mt-1">{data.description}</p>}
         </div>
       );
     }
