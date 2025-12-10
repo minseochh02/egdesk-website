@@ -1,7 +1,38 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import { NextRequest, NextResponse } from 'next/server';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+
+// Define the response schema for structured output (JSON Schema format)
+const responseJsonSchema = {
+  type: 'object',
+  properties: {
+    content: {
+      type: 'string',
+      description: 'The assistant response text to display to the user',
+    },
+    toolCalls: {
+      type: 'array',
+      description: 'Array of tool calls to execute. Empty array if no tools needed.',
+      items: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            description: 'The name of the tool to call',
+          },
+          args: {
+            type: 'object',
+            description: 'Arguments to pass to the tool as key-value pairs',
+            additionalProperties: true,
+          },
+        },
+        required: ['name', 'args'],
+      },
+    },
+  },
+  required: ['content', 'toolCalls'],
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,8 +48,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-
-    const model = genAI.getGenerativeModel({ model: 'gemini-3-pro-preview' });
 
     const systemPrompt = `🚨 CRITICAL INSTRUCTION - READ FIRST:
 When user says "download [filename]" with just a filename (not full path):
@@ -120,28 +149,16 @@ When the user asks about "this code" or "the code", they are referring to the fi
 You can use apps_script_read_file to read other files, or apps_script_write_file to make changes.
 ` : ''}
 
-🚨 CRITICAL: RESPONSE FORMAT (MUST BE VALID JSON):
-You MUST respond with a valid JSON object. No markdown, no code fences, just pure JSON.
+RESPONSE FORMAT:
+Your response will be automatically structured. Just provide:
+- "content": Your response text to the user (can include newlines and formatting)
+- "toolCalls": Array of tools to call, or empty array [] if no tools needed
 
-{
-  "content": "Your response text here (escape quotes and newlines properly)",
-  "toolCalls": []
-}
+Each tool call should have:
+- "name": The exact tool name from the available tools list
+- "args": Object with the required parameters
 
-Or with tool calls:
-{
-  "content": "Brief explanation of what you're doing",
-  "toolCalls": [
-    {"name": "tool_name", "args": {"param1": "value1"}}
-  ]
-}
-
-JSON RULES:
-- Escape all quotes inside strings with \\"
-- Escape newlines with \\n
-- NO trailing commas
-- toolCalls must be an array (use [] if no tools needed)
-- Keep "content" concise when calling tools
+Keep "content" concise when calling tools - you'll explain more after seeing results.
 
 Be intelligent and use the right tools from the right services!`;
 
@@ -179,97 +196,34 @@ ${context.systemInstruction}
     
     prompt += '\nRespond with a JSON object. If you have enough information, set "toolCalls" to empty array and provide final answer in "content". Otherwise, specify tools to call.';
 
-    console.log('🤖 Sending to Gemini API...');
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-    console.log('✅ Gemini response received:', text.substring(0, 200) + '...');
+    console.log('🤖 Sending to Gemini API with structured output...');
 
-    // Try to parse the JSON response with robust error handling
-    try {
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        let jsonStr = jsonMatch[0];
-        
-        // Try direct parse first
-        try {
-          const parsed = JSON.parse(jsonStr);
-          console.log('📤 Returning parsed response with', parsed.toolCalls?.length || 0, 'tool calls');
-          return NextResponse.json(parsed);
-        } catch (directParseError) {
-          console.log('⚠️ Direct JSON parse failed, attempting repair...');
-          
-          // Common JSON repairs
-          // 1. Remove trailing commas before } or ]
-          jsonStr = jsonStr.replace(/,\s*([\}\]])/g, '$1');
-          
-          // 2. Fix unescaped newlines in strings (common in code content)
-          // This is tricky - we need to escape newlines that are inside string values
-          // Try to identify if the error is from unescaped content in "content" field
-          
-          // 3. Try to extract just the essential fields
-          const contentMatch = jsonStr.match(/"content"\s*:\s*"((?:[^"\\]|\\.)*)"/);
-          const toolCallsMatch = jsonStr.match(/"toolCalls"\s*:\s*(\[[\s\S]*?\])/);
-          
-          if (contentMatch) {
-            // Build a clean JSON object
-            const cleanContent = contentMatch[1];
-            const toolCalls = toolCallsMatch ? toolCallsMatch[1] : '[]';
-            
-            try {
-              const cleanJson = `{"content": "${cleanContent}", "toolCalls": ${toolCalls}}`;
-              const parsed = JSON.parse(cleanJson);
-              console.log('📤 Returning repaired JSON with', parsed.toolCalls?.length || 0, 'tool calls');
-              return NextResponse.json(parsed);
-            } catch (cleanError) {
-              // If even clean extraction fails, try one more approach
-              console.log('⚠️ Clean extraction failed, trying lenient parse...');
-            }
-          }
-          
-          // 4. Last resort: Try to fix by truncating at a valid point
-          // Find the last valid closing brace that balances
-          let braceCount = 0;
-          let lastValidEnd = -1;
-          for (let i = 0; i < jsonStr.length; i++) {
-            if (jsonStr[i] === '{') braceCount++;
-            else if (jsonStr[i] === '}') {
-              braceCount--;
-              if (braceCount === 0) {
-                lastValidEnd = i;
-              }
-            }
-          }
-          
-          if (lastValidEnd > 0) {
-            try {
-              const truncated = jsonStr.substring(0, lastValidEnd + 1);
-              const parsed = JSON.parse(truncated);
-              console.log('📤 Returning truncated JSON with', parsed.toolCalls?.length || 0, 'tool calls');
-              return NextResponse.json(parsed);
-            } catch (truncateError) {
-              // Continue to fallback
-            }
-          }
-        }
-      }
-    } catch (parseError) {
-      console.error('Failed to parse Gemini response as JSON:', parseError);
-    }
-
-    // Fallback: return the text as content (strip any partial JSON)
-    let cleanText = text;
-    // If there's a content field we can extract, use just that
-    const contentExtract = text.match(/"content"\s*:\s*"((?:[^"\\]|\\.)*)"/);
-    if (contentExtract) {
-      cleanText = contentExtract[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
-    }
+    // Use new @google/genai SDK with structured output
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-pro-preview-05-06',
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        responseJsonSchema: responseJsonSchema,
+      },
+    });
     
-    console.log('📤 Returning fallback text response');
-    return NextResponse.json({
-      content: cleanText,
+    const text = response.text;
+    console.log('✅ Gemini structured response received:', text?.substring(0, 200) + '...');
+
+    // With structured output, Gemini guarantees valid JSON matching our schema
+    try {
+      const parsed = JSON.parse(text || '{}');
+      console.log('📤 Returning structured response with', parsed.toolCalls?.length || 0, 'tool calls');
+              return NextResponse.json(parsed);
+    } catch (parseError) {
+      console.error('Failed to parse structured response:', parseError);
+      // Fallback: return the text as content
+      return NextResponse.json({
+        content: text || 'No response from AI',
       toolCalls: []
     });
+    }
 
   } catch (error) {
     console.error('Gemini API error:', error);
