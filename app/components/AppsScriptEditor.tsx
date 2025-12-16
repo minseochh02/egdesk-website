@@ -26,7 +26,8 @@ import {
   Upload,
   Download,
   Play,
-  History
+  History,
+  ChevronDown
 } from 'lucide-react';
 
 interface AppsScriptEditorProps {
@@ -89,9 +90,11 @@ export default function AppsScriptEditor({
   const [runResult, setRunResult] = useState<{ success: boolean; result?: any; error?: string; logs?: string[] } | null>(null);
   const [showRunDialog, setShowRunDialog] = useState(false);
   const [functionToRun, setFunctionToRun] = useState('');
+  const [availableFunctions, setAvailableFunctions] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [syncStatus, setSyncStatus] = useState<'idle' | 'pushed' | 'pulled' | 'error'>('idle');
+  const [lastPushedVersion, setLastPushedVersion] = useState<number | null>(null);
 
   // Chat State
   const [isChatOpen, setIsChatOpen] = useState(true);
@@ -132,6 +135,67 @@ export default function AppsScriptEditor({
   useEffect(() => {
     loadFiles();
   }, [projectId, serverKey, serviceName]);
+
+  // Extract function names from script files
+  const extractFunctions = useCallback(() => {
+    if (!files || files.length === 0) {
+      console.log('🔍 No script files found for function detection');
+      setAvailableFunctions([]);
+      return;
+    }
+
+    const functions: string[] = [];
+    const functionRegex = /function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(/g;
+
+    console.log('🔍 Scanning files for functions:', files.map(f => ({ name: f.name, type: f.type, hasSource: !!f.source })));
+
+    for (const file of files) {
+      // Check for .gs files - type could be 'server_js', 'SERVER_JS', or file name ends with .gs
+      const isGsFile = 
+        file.type?.toLowerCase() === 'server_js' || 
+        file.name?.endsWith('.gs') ||
+        file.type === 'SERVER_JS';
+      
+      // Use file.source if available, or use fileContent if this is the selected file
+      let sourceToScan = file.source;
+      if (!sourceToScan && file.name === selectedFile && fileContent) {
+        sourceToScan = fileContent;
+      }
+      
+      if (isGsFile && sourceToScan) {
+        // Reset regex lastIndex for each file
+        functionRegex.lastIndex = 0;
+        let match;
+        while ((match = functionRegex.exec(sourceToScan)) !== null) {
+          const funcName = match[1];
+          // Skip private functions (starting with _)
+          if (!funcName.startsWith('_') && !functions.includes(funcName)) {
+            functions.push(funcName);
+          }
+        }
+        console.log(`📄 Found functions in ${file.name}:`, functions.length);
+      }
+    }
+
+    // Sort alphabetically, but put common entry points first
+    const priorityFunctions = ['doGet', 'doPost', 'onOpen', 'onEdit', 'onInstall', 'main', 'run'];
+    functions.sort((a, b) => {
+      const aIdx = priorityFunctions.indexOf(a);
+      const bIdx = priorityFunctions.indexOf(b);
+      if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+      if (aIdx !== -1) return -1;
+      if (bIdx !== -1) return 1;
+      return a.localeCompare(b);
+    });
+
+    console.log('✅ Total functions detected:', functions);
+    setAvailableFunctions(functions);
+  }, [files, selectedFile, fileContent]);
+
+  // Update available functions when files or file content changes
+  useEffect(() => {
+    extractFunctions();
+  }, [extractFunctions]);
 
   // Fetch project details and spreadsheet context on mount
   useEffect(() => {
@@ -440,7 +504,9 @@ export default function AppsScriptEditor({
   };
 
   const handlePushToGoogle = async () => {
-    if (!confirm('Push local changes to Google Apps Script?\n\nThis will overwrite the cloud version with your local changes.')) {
+    const confirmMsg = 'Push local changes to Google Apps Script and create a new version?\n\nThis will overwrite the cloud version with your local changes and create an immutable snapshot.';
+    
+    if (!confirm(confirmMsg)) {
       return;
     }
 
@@ -449,12 +515,38 @@ export default function AppsScriptEditor({
     setError(null);
 
     try {
-      console.log(`⬆️ Pushing to Google Apps Script...`);
-      const result = await callTool('apps_script_push_to_google', { projectId });
+      console.log(`⬆️ Pushing to Google Apps Script with version...`);
+      const result = await callTool('apps_script_push_to_google', { 
+        projectId,
+        createVersion: true,
+        versionDescription: `Push from EGDesk at ${new Date().toLocaleString()}`
+      });
 
       if (result && !result.error) {
+        // Parse result if needed
+        let parsed = result;
+        if (result.content?.[0]?.text) {
+          try {
+            parsed = JSON.parse(result.content[0].text);
+          } catch {
+            parsed = result;
+          }
+        }
+        
         setSyncStatus('pushed');
-        setTimeout(() => setSyncStatus('idle'), 3000);
+        
+        // Show version info if created
+        if (parsed.versionNumber) {
+          setLastPushedVersion(parsed.versionNumber);
+          console.log(`✅ Pushed and created version ${parsed.versionNumber}`);
+        } else {
+          setLastPushedVersion(null);
+        }
+        
+        setTimeout(() => {
+          setSyncStatus('idle');
+          setLastPushedVersion(null);
+        }, 4000);
       } else {
         setError(result?.error || 'Failed to push to Google');
         setSyncStatus('error');
@@ -650,6 +742,22 @@ export default function AppsScriptEditor({
           deploymentId: 'string (The deployment ID to update)',
           versionNumber: 'number (Optional - new version number, creates new version if not provided)',
           description: 'string (Optional new description)'
+        }
+      },
+      // Version history tools
+      {
+        name: 'apps_script_list_versions',
+        description: 'List all saved versions (snapshots) of the Apps Script project. Returns version numbers, descriptions, and creation dates.',
+        parameters: { 
+          projectId: 'string (The project ID)' 
+        }
+      },
+      {
+        name: 'apps_script_get_version_content',
+        description: 'Get the file contents of a specific version. Use this to view or compare code from a previous snapshot.',
+        parameters: {
+          projectId: 'string (The project ID)',
+          versionNumber: 'number (The version number to retrieve)'
         }
       },
       // Sheets tools (only if spreadsheet is bound)
@@ -976,6 +1084,18 @@ You MUST respond with valid JSON only. No markdown code fences.
                   description: toolCall.args.description
                 });
                 break;
+              // Version history tools
+              case 'apps_script_list_versions':
+                result = await callTool('apps_script_list_versions', {
+                  projectId: toolCall.args.projectId || projectId
+                });
+                break;
+              case 'apps_script_get_version_content':
+                result = await callTool('apps_script_get_version_content', {
+                  projectId: toolCall.args.projectId || projectId,
+                  versionNumber: toolCall.args.versionNumber
+                });
+                break;
               // Sheets tools
               case 'sheets_get_range':
                 result = await callSheetsTool('sheets_get_range', {
@@ -1290,6 +1410,80 @@ You MUST respond with valid JSON only. No markdown code fences.
       );
     }
 
+    // Version history tools
+    if (toolCall.name === 'apps_script_list_versions') {
+      let data: any = toolCall.result;
+      if (typeof data?.content?.[0]?.text === 'string') {
+        try {
+          data = JSON.parse(data.content[0].text);
+        } catch (e) {
+          // Keep original
+        }
+      }
+      const versions = data?.versions || data || [];
+      
+      return (
+        <div className="mt-2 p-2 bg-zinc-800 rounded text-xs">
+          <div className="flex items-center gap-1.5 mb-1.5 text-amber-400 font-medium">
+            <History className="w-3 h-3" />
+            Versions ({Array.isArray(versions) ? versions.length : 0})
+          </div>
+          <div className="space-y-1 max-h-32 overflow-y-auto">
+            {(Array.isArray(versions) ? versions : []).map((v: any, idx: number) => (
+              <div key={idx} className="flex items-center justify-between text-zinc-300 p-1 bg-zinc-900 rounded">
+                <span className="font-mono">v{v.versionNumber}</span>
+                <span className="text-zinc-500 text-[10px]">
+                  {v.createTime ? new Date(v.createTime).toLocaleDateString() : ''}
+                </span>
+              </div>
+            ))}
+            {(!versions || versions.length === 0) && (
+              <p className="text-zinc-500">No versions found</p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    if (toolCall.name === 'apps_script_get_version_content') {
+      let data: any = toolCall.result;
+      if (typeof data?.content?.[0]?.text === 'string') {
+        try {
+          data = JSON.parse(data.content[0].text);
+        } catch (e) {
+          // Keep original
+        }
+      }
+      const files = data?.files || [];
+      
+      return (
+        <div className="mt-2 p-2 bg-zinc-800 rounded text-xs">
+          <div className="flex items-center gap-1.5 mb-1.5 text-cyan-400 font-medium">
+            <FileCode className="w-3 h-3" />
+            Version {toolCall.args.versionNumber} Content ({files.length} files)
+          </div>
+          <div className="space-y-1 max-h-40 overflow-y-auto">
+            {files.map((f: any, idx: number) => (
+              <div key={idx} className="p-1.5 bg-zinc-900 rounded">
+                <div className="flex items-center justify-between">
+                  <span className="text-zinc-300 font-mono text-[11px]">{f.name}</span>
+                  <span className="text-zinc-500 text-[10px]">{f.type}</span>
+                </div>
+                {f.source && (
+                  <pre className="text-zinc-400 text-[10px] mt-1 whitespace-pre-wrap overflow-hidden max-h-16">
+                    {f.source.substring(0, 200)}{f.source.length > 200 ? '...' : ''}
+                  </pre>
+                )}
+              </div>
+            ))}
+            {files.length === 0 && (
+              <p className="text-zinc-500">No files in this version</p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     // Sheets tools
     if (toolCall.name === 'sheets_get_range' || toolCall.name === 'sheets_get_headers' || toolCall.name === 'sheets_get_sample_data') {
       let data: any = toolCall.result;
@@ -1424,7 +1618,7 @@ You MUST respond with valid JSON only. No markdown code fences.
             onClick={handlePushToGoogle}
             disabled={isPushing || isPulling}
             className="flex items-center gap-1.5 px-2.5 py-1.5 bg-green-600 hover:bg-green-500 text-white text-xs font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Push local changes to Google Apps Script"
+            title="Push and create version"
           >
             {isPushing ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1451,7 +1645,7 @@ You MUST respond with valid JSON only. No markdown code fences.
           {syncStatus === 'pushed' && (
             <div className="flex items-center gap-1 text-green-400 text-xs animate-in fade-in">
               <CheckCircle className="w-3.5 h-3.5" />
-              Pushed!
+              {lastPushedVersion ? `Pushed! (v${lastPushedVersion})` : 'Pushed!'}
             </div>
           )}
           {syncStatus === 'pulled' && (
@@ -1465,7 +1659,12 @@ You MUST respond with valid JSON only. No markdown code fences.
 
           {/* Run & Version Buttons */}
           <button
-            onClick={() => setShowRunDialog(true)}
+            onClick={() => {
+              setShowRunDialog(true);
+              // Auto-select first function if available
+              setFunctionToRun(availableFunctions.length > 0 ? availableFunctions[0] : '');
+              setRunResult(null);
+            }}
             disabled={isRunning}
             className="flex items-center gap-1.5 px-2.5 py-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title="Run a function"
@@ -1749,23 +1948,32 @@ You MUST respond with valid JSON only. No markdown code fences.
             
             <div className="p-4 space-y-4">
               <div>
-                <label className="block text-xs text-zinc-400 mb-1.5">Function Name</label>
-                <input
-                  type="text"
-                  value={functionToRun}
-                  onChange={(e) => setFunctionToRun(e.target.value)}
-                  placeholder="e.g., doGet, myFunction, main"
-                  className="w-full bg-zinc-900 border border-zinc-600 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:border-violet-500 focus:outline-none"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !isRunning) {
-                      handleRunFunction();
-                    }
-                  }}
-                  autoFocus
-                />
-                <p className="text-[10px] text-zinc-500 mt-1">
-                  Runs against the most recent saved version (devMode)
-                </p>
+                <label className="block text-xs text-zinc-400 mb-1.5">Select Function</label>
+                <div className="relative">
+                  <select
+                    value={functionToRun}
+                    onChange={(e) => setFunctionToRun(e.target.value)}
+                    className="w-full bg-zinc-900 border border-zinc-600 rounded-lg px-3 py-2.5 text-sm text-white focus:border-violet-500 focus:outline-none appearance-none cursor-pointer pr-10"
+                    autoFocus
+                  >
+                    <option value="">-- Select a function --</option>
+                    {availableFunctions.map((func) => (
+                      <option key={func} value={func}>
+                        {func}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-violet-400 pointer-events-none" />
+                </div>
+                {availableFunctions.length === 0 ? (
+                  <p className="text-[10px] text-amber-400 mt-1.5">
+                    No functions detected. Make sure your .gs files contain valid function declarations.
+                  </p>
+                ) : (
+                  <p className="text-[10px] text-zinc-500 mt-1.5">
+                    Found {availableFunctions.length} function{availableFunctions.length !== 1 ? 's' : ''} in project. Runs in devMode.
+                  </p>
+                )}
               </div>
 
               {runResult && (
