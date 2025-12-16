@@ -10,7 +10,7 @@ import { useMCPServiceTools } from '@/hooks/useMCPServiceTools';
 import { useUserServers } from '@/hooks/useUserServers';
 import { useServerHealth } from '@/hooks/useServerHealth';
 import { useConversations } from '@/hooks/useConversations';
-import { Server, RefreshCw, CheckCircle, Clock, Ban, Cloud, CloudOff } from 'lucide-react';
+import { Server, RefreshCw, CheckCircle, Clock, Ban, Cloud, CloudOff, Bot, ChevronDown, Loader2 } from 'lucide-react';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput';
 
@@ -265,6 +265,13 @@ export default function ChatArea({ tabId, onOpenProject }: ChatAreaProps) {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isDraggingFile, setIsDraggingFile] = useState(false);
   const [contextMessageCount, setContextMessageCount] = useState(0);
+
+  // Model Selection State
+  const [availableModels, setAvailableModels] = useState<Array<{ modelId: string; displayName: string }>>([]);
+  const [selectedModel, setSelectedModel] = useState<string>('');
+  const [defaultModel, setDefaultModel] = useState<string>('');
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [showModelDropdown, setShowModelDropdown] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCounterRef = useRef(0);
@@ -279,6 +286,34 @@ export default function ChatArea({ tabId, onOpenProject }: ChatAreaProps) {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Fetch available Gemini models on mount
+  useEffect(() => {
+    const fetchModels = async () => {
+      setIsLoadingModels(true);
+      try {
+        const response = await fetch('/api/gemini');
+        if (response.ok) {
+          const data = await response.json();
+          // Filter to only show generateContent-capable models
+          const contentModels = (data.models || []).filter((m: any) => 
+            m.supportedGenerationMethods?.includes('generateContent')
+          );
+          setAvailableModels(contentModels);
+          setDefaultModel(data.defaultModel || '');
+          // Set initial selection to default model
+          if (!selectedModel && data.defaultModel) {
+            setSelectedModel(data.defaultModel);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch Gemini models:', err);
+      } finally {
+        setIsLoadingModels(false);
+      }
+    };
+    fetchModels();
+  }, []);
 
   // Update welcome message when auth or server selection changes
   useEffect(() => {
@@ -643,7 +678,8 @@ Be proactive and helpful in interpreting user intent. If a command is ambiguous,
           },
           body: JSON.stringify({
             message: conversationHistoryRef.current,
-            context: { availableTools }
+            context: { availableTools },
+            model: selectedModel || undefined
           })
         });
 
@@ -1180,6 +1216,60 @@ Be proactive and helpful in interpreting user intent. If a command is ambiguous,
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                {/* Model Selector */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowModelDropdown(!showModelDropdown)}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 rounded-lg text-zinc-300 transition-colors"
+                    title="Select AI Model"
+                  >
+                    <Bot className="w-3.5 h-3.5 text-violet-400" />
+                    <span className="max-w-[100px] truncate">
+                      {selectedModel ? selectedModel.replace('gemini-', '').replace('-preview', '') : 'Model'}
+                    </span>
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </button>
+                  {showModelDropdown && (
+                    <div className="absolute right-0 top-full mt-1 w-64 bg-zinc-800 border border-zinc-600 rounded-lg shadow-xl z-50 max-h-72 overflow-y-auto">
+                      <div className="p-2 border-b border-zinc-700">
+                        <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Gemini Models</p>
+                      </div>
+                      {isLoadingModels ? (
+                        <div className="p-4 text-center text-zinc-500 text-xs">
+                          <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />
+                          Loading models...
+                        </div>
+                      ) : availableModels.length === 0 ? (
+                        <div className="p-4 text-center text-zinc-500 text-xs">
+                          No models available
+                        </div>
+                      ) : (
+                        availableModels.map((model) => (
+                          <button
+                            key={model.modelId}
+                            onClick={() => {
+                              setSelectedModel(model.modelId);
+                              setShowModelDropdown(false);
+                            }}
+                            className={`w-full text-left px-3 py-2.5 text-xs hover:bg-zinc-700 transition-colors flex items-center justify-between border-b border-zinc-700/50 last:border-0 ${
+                              selectedModel === model.modelId ? 'bg-violet-600/20 text-violet-300' : 'text-zinc-300'
+                            }`}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium truncate">{model.displayName || model.modelId}</div>
+                              <div className="text-[10px] text-zinc-500 truncate">{model.modelId}</div>
+                            </div>
+                            {model.modelId === defaultModel && (
+                              <span className="text-[9px] px-1.5 py-0.5 bg-violet-500/20 text-violet-400 rounded ml-2 flex-shrink-0">
+                                default
+                              </span>
+                            )}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={() => setShowFileTree(!showFileTree)}
                   className={`p-1.5 rounded transition-colors ${

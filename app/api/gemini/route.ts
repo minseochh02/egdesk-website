@@ -3,6 +3,20 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
+// Default model to use if none specified
+// Use a stable, widely available model
+const DEFAULT_MODEL = 'gemini-2.0-flash';
+
+// Models to exclude (deprecated, experimental, or not suitable for chat)
+const EXCLUDED_MODEL_PATTERNS = [
+  'aqa',           // Answer quality models
+  'embedding',     // Embedding models
+  'text-embedding',
+  'imagen',        // Image generation models
+  'learnlm',       // Learning models
+  'gemma',         // Gemma models (different family)
+];
+
 // Define the response schema for structured output (JSON Schema format)
 const responseJsonSchema = {
   type: 'object',
@@ -34,10 +48,113 @@ const responseJsonSchema = {
   required: ['content', 'toolCalls'],
 };
 
+// GET endpoint to list available Gemini models
+export async function GET() {
+  try {
+    if (!process.env.GEMINI_API_KEY) {
+      return NextResponse.json(
+        { error: 'Gemini API key not configured' },
+        { status: 500 }
+      );
+    }
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GEMINI_API_KEY}`
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Failed to fetch models:', errorText);
+      return NextResponse.json(
+        { error: 'Failed to fetch Gemini models', details: errorText },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+    
+    // Filter and format models for easier consumption
+    const models = (data.models || [])
+      .filter((model: any) => {
+        const modelId = model.name?.replace('models/', '') || '';
+        
+        // Must support generateContent
+        if (!model.supportedGenerationMethods?.includes('generateContent')) {
+          return false;
+        }
+        
+        // Exclude non-Gemini models and special purpose models
+        if (EXCLUDED_MODEL_PATTERNS.some(pattern => modelId.toLowerCase().includes(pattern))) {
+          return false;
+        }
+        
+        // Only include gemini models
+        if (!modelId.startsWith('gemini')) {
+          return false;
+        }
+        
+        return true;
+      })
+      .map((model: any) => ({
+        name: model.name,
+        displayName: model.displayName,
+        description: model.description,
+        inputTokenLimit: model.inputTokenLimit,
+        outputTokenLimit: model.outputTokenLimit,
+        supportedGenerationMethods: model.supportedGenerationMethods,
+        // Extract just the model ID (e.g., "gemini-2.0-flash" from "models/gemini-2.0-flash")
+        modelId: model.name?.replace('models/', ''),
+      }));
+
+    // Sort: prioritize newer versions and pro/flash variants
+    models.sort((a: any, b: any) => {
+      const aId = a.modelId || '';
+      const bId = b.modelId || '';
+      
+      // Extract version numbers for sorting (2.0 > 1.5 > 1.0)
+      const getVersion = (id: string) => {
+        const match = id.match(/gemini-(\d+\.?\d*)/);
+        return match ? parseFloat(match[1]) : 0;
+      };
+      
+      const aVersion = getVersion(aId);
+      const bVersion = getVersion(bId);
+      
+      // Sort by version descending (newer first)
+      if (aVersion !== bVersion) {
+        return bVersion - aVersion;
+      }
+      
+      // Then sort alphabetically
+      return aId.localeCompare(bId);
+    });
+
+    // Find the actual default model (prefer our DEFAULT_MODEL if available, else first in list)
+    const actualDefault = models.find((m: any) => m.modelId === DEFAULT_MODEL)?.modelId 
+      || models[0]?.modelId 
+      || DEFAULT_MODEL;
+
+    return NextResponse.json({
+      models,
+      defaultModel: actualDefault,
+      count: models.length,
+    });
+  } catch (error) {
+    console.error('Error fetching Gemini models:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch Gemini models' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { message, context } = body;
+    const { message, context, model } = body;
+    
+    // Use provided model or fall back to default
+    const selectedModel = model || DEFAULT_MODEL;
     
     // Handle both single message and conversation history
     const conversationHistory = Array.isArray(message) ? message : [{ role: 'user', content: message }];
@@ -48,6 +165,8 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+    
+    console.log(`🤖 Using Gemini model: ${selectedModel}`);
 
     const systemPrompt = `🚨 CRITICAL INSTRUCTION - READ FIRST:
 When user says "download [filename]" with just a filename (not full path):
@@ -196,11 +315,11 @@ ${context.systemInstruction}
     
     prompt += '\nRespond with a JSON object. If you have enough information, set "toolCalls" to empty array and provide final answer in "content". Otherwise, specify tools to call.';
 
-    console.log('🤖 Sending to Gemini API with structured output...');
+    console.log(`🤖 Sending to Gemini API (${selectedModel}) with structured output...`);
 
     // Use new @google/genai SDK with structured output
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-pro-preview-05-06',
+      model: selectedModel,
       contents: prompt,
       config: {
         responseMimeType: 'application/json',
@@ -215,14 +334,18 @@ ${context.systemInstruction}
     try {
       const parsed = JSON.parse(text || '{}');
       console.log('📤 Returning structured response with', parsed.toolCalls?.length || 0, 'tool calls');
-              return NextResponse.json(parsed);
+      return NextResponse.json({
+        ...parsed,
+        model: selectedModel, // Include which model was used
+      });
     } catch (parseError) {
       console.error('Failed to parse structured response:', parseError);
       // Fallback: return the text as content
       return NextResponse.json({
         content: text || 'No response from AI',
-      toolCalls: []
-    });
+        toolCalls: [],
+        model: selectedModel,
+      });
     }
 
   } catch (error) {

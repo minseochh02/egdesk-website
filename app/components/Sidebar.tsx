@@ -4,13 +4,15 @@ import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConversations, Conversation } from '@/hooks/useConversations';
 import { useUserServers } from '@/hooks/useUserServers';
-import { MessageSquare, FileCode, Search, Plus, Cloud, CloudOff, Loader2, RefreshCw } from 'lucide-react';
+import { MessageSquare, FileCode, Search, Plus, Cloud, CloudOff, Loader2, RefreshCw, PanelLeftClose, PanelLeft } from 'lucide-react';
 
 interface SidebarProps {
   onNewChat: () => void;
   onSelectConversation?: (conversation: Conversation) => void;
   activeConversationId?: string;
   onSignOut?: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 // Helper to format relative time
@@ -31,7 +33,7 @@ function formatRelativeTime(dateStr: string): string {
   return date.toLocaleDateString();
 }
 
-export default function Sidebar({ onNewChat, onSelectConversation, activeConversationId, onSignOut }: SidebarProps) {
+export default function Sidebar({ onNewChat, onSelectConversation, activeConversationId, onSignOut, isCollapsed = false, onToggleCollapse }: SidebarProps) {
   const { user, signOut: authSignOut } = useAuth();
   const { servers } = useUserServers();
   const [searchQuery, setSearchQuery] = useState('');
@@ -111,21 +113,49 @@ export default function Sidebar({ onNewChat, onSelectConversation, activeConvers
   };
 
   return (
-    <div className="flex h-full w-64 flex-col border-r border-zinc-800 bg-zinc-950">
+    <div className={`flex h-full flex-col border-r border-zinc-800 bg-zinc-950 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-zinc-800">
-        <h1 className="text-xl font-semibold text-white">EGDesk</h1>
+      <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} p-4 border-b border-zinc-800`}>
+        {!isCollapsed && <h1 className="text-xl font-semibold text-white">EGDesk</h1>}
         <div className="flex items-center gap-2">
-          {/* Connection status */}
-          {isConnected ? (
-            <span title="Connected">
-              <Cloud className="w-4 h-4 text-green-400" />
-            </span>
-          ) : (
-            <span title="Offline">
-              <CloudOff className="w-4 h-4 text-yellow-400" />
-            </span>
+          {/* Connection status - only show when expanded */}
+          {!isCollapsed && (
+            isConnected ? (
+              <span title="Connected">
+                <Cloud className="w-4 h-4 text-green-400" />
+              </span>
+            ) : (
+              <span title="Offline">
+                <CloudOff className="w-4 h-4 text-yellow-400" />
+              </span>
+            )
           )}
+          {!isCollapsed && (
+            <button
+              onClick={onNewChat}
+              className="rounded-lg p-2 hover:bg-zinc-800 transition-colors"
+              title="New Chat"
+            >
+              <Plus className="w-5 h-5 text-zinc-400" />
+            </button>
+          )}
+          <button
+            onClick={onToggleCollapse}
+            className="rounded-lg p-2 hover:bg-zinc-800 transition-colors"
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {isCollapsed ? (
+              <PanelLeft className="w-5 h-5 text-zinc-400" />
+            ) : (
+              <PanelLeftClose className="w-5 h-5 text-zinc-400" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Search */}
+      {isCollapsed ? (
+        <div className="p-3 flex justify-center">
           <button
             onClick={onNewChat}
             className="rounded-lg p-2 hover:bg-zinc-800 transition-colors"
@@ -134,21 +164,20 @@ export default function Sidebar({ onNewChat, onSelectConversation, activeConvers
             <Plus className="w-5 h-5 text-zinc-400" />
           </button>
         </div>
-      </div>
-
-      {/* Search */}
-      <div className="p-4">
-        <div className="relative">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search chats..."
-            className="w-full rounded-lg bg-zinc-900 px-4 py-2 pl-10 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-500" />
+      ) : (
+        <div className="p-4">
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search chats..."
+              className="w-full rounded-lg bg-zinc-900 px-4 py-2 pl-10 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-500" />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Chat History */}
       <div className="flex-1 overflow-y-auto px-2">
@@ -157,19 +186,49 @@ export default function Sidebar({ onNewChat, onSelectConversation, activeConvers
             <Loader2 className="w-5 h-5 text-zinc-500 animate-spin" />
           </div>
         ) : filteredConversations.length === 0 ? (
-          <div className="text-center py-8 px-4">
-            <div className="text-zinc-500 text-sm">
-              {searchQuery ? 'No matching chats' : (
-                !isConnected ? (
-                  <div className="space-y-2">
-                    <p>Connect to see chats</p>
-                    <p className="text-xs text-zinc-600">Enable "conversations" in your desktop app's MCP settings</p>
-                  </div>
-                ) : 'No chats yet'
-              )}
+          !isCollapsed && (
+            <div className="text-center py-8 px-4">
+              <div className="text-zinc-500 text-sm">
+                {searchQuery ? 'No matching chats' : (
+                  !isConnected ? (
+                    <div className="space-y-2">
+                      <p>Connect to see chats</p>
+                      <p className="text-xs text-zinc-600">Enable "conversations" in your desktop app's MCP settings</p>
+                    </div>
+                  ) : 'No chats yet'
+                )}
+              </div>
             </div>
+          )
+        ) : isCollapsed ? (
+          /* Collapsed view - just icons */
+          <div className="space-y-1 py-2">
+            {filteredConversations.slice(0, 10).map((conversation) => {
+              const isAppsScript = conversation.metadata?.source === 'appsscript-editor';
+              const isActive = activeConversationId === conversation.id;
+              
+              return (
+                <button
+                  key={conversation.id}
+                  onClick={() => handleConversationClick(conversation)}
+                  className={`flex w-full items-center justify-center rounded-lg p-2 transition-colors ${
+                    isActive 
+                      ? 'bg-zinc-800 text-white' 
+                      : 'hover:bg-zinc-800/50 text-zinc-300'
+                  }`}
+                  title={conversation.title}
+                >
+                  {isAppsScript ? (
+                    <FileCode className="w-4 h-4 text-blue-400" />
+                  ) : (
+                    <MessageSquare className="w-4 h-4 text-zinc-400" />
+                  )}
+                </button>
+              );
+            })}
           </div>
         ) : (
+          /* Expanded view - full list */
           <div className="space-y-4">
             {Object.entries(groupedConversations).map(([group, convs]) => 
               convs.length > 0 && (
@@ -216,7 +275,7 @@ export default function Sidebar({ onNewChat, onSelectConversation, activeConvers
         )}
         
         {/* Refresh button */}
-        {primaryServerKey && (
+        {primaryServerKey && !isCollapsed && (
           <div className="py-4 flex justify-center">
             <button
               onClick={() => listConversations()}
@@ -231,9 +290,12 @@ export default function Sidebar({ onNewChat, onSelectConversation, activeConvers
       </div>
 
       {/* User Profile */}
-      <div className="border-t border-zinc-800 p-4">
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm overflow-hidden">
+      <div className={`border-t border-zinc-800 ${isCollapsed ? 'p-2' : 'p-4'}`}>
+        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+          <div 
+            className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm overflow-hidden cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all"
+            title={isCollapsed ? (user?.email || 'Not signed in') : undefined}
+          >
             {user?.user_metadata?.avatar_url ? (
               <img 
                 src={user.user_metadata.avatar_url} 
@@ -244,35 +306,39 @@ export default function Sidebar({ onNewChat, onSelectConversation, activeConvers
               user?.email?.[0].toUpperCase() || 'U'
             )}
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white truncate">
-              {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
-            </p>
-            <p className="text-xs text-zinc-500 truncate">{user?.email || 'Not signed in'}</p>
-          </div>
-          <button 
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleSignOutClick();
-            }}
-            className="relative z-10 cursor-pointer rounded-lg p-1 hover:bg-zinc-800 transition-colors"
-            title="Sign out"
-          >
-            <svg
-              className="w-4 h-4 text-zinc-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-              />
-            </svg>
-          </button>
+          {!isCollapsed && (
+            <>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">
+                  {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
+                </p>
+                <p className="text-xs text-zinc-500 truncate">{user?.email || 'Not signed in'}</p>
+              </div>
+              <button 
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSignOutClick();
+                }}
+                className="relative z-10 cursor-pointer rounded-lg p-1 hover:bg-zinc-800 transition-colors"
+                title="Sign out"
+              >
+                <svg
+                  className="w-4 h-4 text-zinc-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                  />
+                </svg>
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

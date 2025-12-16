@@ -27,7 +27,10 @@ import {
   Download,
   Play,
   History,
-  ChevronDown
+  ChevronDown,
+  ChevronUp,
+  GitBranch,
+  RotateCcw
 } from 'lucide-react';
 
 interface AppsScriptEditorProps {
@@ -96,12 +99,30 @@ export default function AppsScriptEditor({
   const [syncStatus, setSyncStatus] = useState<'idle' | 'pushed' | 'pulled' | 'error'>('idle');
   const [lastPushedVersion, setLastPushedVersion] = useState<number | null>(null);
 
+  // Version History State
+  const [versions, setVersions] = useState<Array<{ versionNumber: number; description?: string; createTime: string }>>([]);
+  const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
+  const [showVersionDropdown, setShowVersionDropdown] = useState(false);
+  const [isLoadingVersions, setIsLoadingVersions] = useState(false);
+  const [isAuthError, setIsAuthError] = useState(false);
+
   // Chat State
   const [isChatOpen, setIsChatOpen] = useState(true);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const lineNumbersRef = useRef<HTMLDivElement>(null);
+  // Maintain conversation history for AI context across messages
+  const conversationHistoryRef = useRef<Array<{ role: string; content: string }>>([]);
+
+  // Model Selection State
+  const [availableModels, setAvailableModels] = useState<Array<{ modelId: string; displayName: string }>>([]);
+  const [selectedModel, setSelectedModel] = useState<string>('');
+  const [defaultModel, setDefaultModel] = useState<string>('');
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [showModelDropdown, setShowModelDropdown] = useState(false);
 
   // MCP Hooks
   const { callTool, loading: mcpLoading } = useMCPTools(serverKey, serviceName);
@@ -134,7 +155,36 @@ export default function AppsScriptEditor({
   // Fetch files on mount
   useEffect(() => {
     loadFiles();
+    loadVersions();
   }, [projectId, serverKey, serviceName]);
+
+  // Fetch available Gemini models on mount
+  useEffect(() => {
+    const fetchModels = async () => {
+      setIsLoadingModels(true);
+      try {
+        const response = await fetch('/api/gemini');
+        if (response.ok) {
+          const data = await response.json();
+          // Filter to only show generateContent-capable models
+          const contentModels = (data.models || []).filter((m: any) => 
+            m.supportedGenerationMethods?.includes('generateContent')
+          );
+          setAvailableModels(contentModels);
+          setDefaultModel(data.defaultModel || '');
+          // Set initial selection to default model
+          if (!selectedModel && data.defaultModel) {
+            setSelectedModel(data.defaultModel);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch Gemini models:', err);
+      } finally {
+        setIsLoadingModels(false);
+      }
+    };
+    fetchModels();
+  }, []);
 
   // Extract function names from script files
   const extractFunctions = useCallback(() => {
@@ -254,6 +304,179 @@ export default function AppsScriptEditor({
     }
   }, [persistedMessages]);
 
+  const loadVersions = async () => {
+    setIsLoadingVersions(true);
+    try {
+      console.log('📜 Loading versions...');
+      const result = await callTool('apps_script_list_versions', { projectId });
+      
+      if (result && !result.error) {
+        setIsAuthError(false);
+        let versionsList: any[] = [];
+        
+        // Parse result - handle different response formats:
+        // 1. Raw MCP format: { content: [{ text: '{"versions": [...]}' }] }
+        if (result.content?.[0]?.text) {
+          try {
+            const parsed = JSON.parse(result.content[0].text);
+            versionsList = parsed.versions || parsed || [];
+          } catch {
+            versionsList = [];
+          }
+        } 
+        // 2. useMCPTools parsed format: { content: { versions: [...] } }
+        else if (result.content && typeof result.content === 'object' && !Array.isArray(result.content)) {
+          versionsList = result.content.versions || [];
+        }
+        // 3. Direct versions property
+        else if (result.versions) {
+          versionsList = result.versions;
+        } 
+        // 4. Direct array
+        else if (Array.isArray(result)) {
+          versionsList = result;
+        }
+
+        // Sort by version number descending
+        versionsList.sort((a: any, b: any) => (b.versionNumber || 0) - (a.versionNumber || 0));
+        
+        setVersions(versionsList);
+        console.log(`✅ Loaded ${versionsList.length} versions`);
+      }
+    } catch (err: any) {
+      console.error('Error loading versions:', err);
+      if (err.message?.includes('No Google OAuth token available') || err.message?.includes('sign in with Google')) {
+        setIsAuthError(true);
+      }
+    } finally {
+      setIsLoadingVersions(false);
+    }
+  };
+
+  const handleVersionSelect = async (version: number | null) => {
+    setSelectedVersion(version);
+    setShowVersionDropdown(false);
+
+    if (version === null) {
+      // Switch back to HEAD (current working copy)
+      await loadFiles();
+    } else {
+      // Load specific version content
+      setIsLoadingFiles(true);
+      setError(null);
+      
+      try {
+        console.log(`📜 Loading content for version ${version}...`);
+        const result = await callTool('apps_script_get_version_content', {
+          projectId,
+          versionNumber: version
+        });
+
+        if (result && !result.error) {
+          let versionFiles: ScriptFile[] = [];
+          let filesData: any[] = [];
+          
+          // Parse result - handle different response formats:
+          // 1. Raw MCP format: { content: [{ text: '{"files": [...]}' }] }
+          if (result.content?.[0]?.text) {
+            try {
+              const parsed = JSON.parse(result.content[0].text);
+              filesData = parsed.files || [];
+            } catch (e) {
+              console.error('Failed to parse version content:', e);
+            }
+          } 
+          // 2. useMCPTools parsed format: { content: { files: [...] } }
+          else if (result.content && typeof result.content === 'object' && !Array.isArray(result.content)) {
+            filesData = result.content.files || [];
+          }
+          // 3. Direct files property
+          else if (result.files) {
+            filesData = result.files;
+          }
+          
+          versionFiles = filesData.map((f: any) => ({
+            name: f.name,
+            type: f.type,
+            source: f.source
+          }));
+
+          console.log(`✅ Loaded ${versionFiles.length} files from version ${version}`);
+          setFiles(versionFiles);
+          
+          // Auto-select first file
+          if (versionFiles.length > 0) {
+            setSelectedFile(versionFiles[0].name);
+            setFileContent(versionFiles[0].source || '');
+          } else {
+            setSelectedFile(null);
+            setFileContent('');
+          }
+        } else {
+          setError(result?.error || 'Failed to load version content');
+        }
+      } catch (err) {
+        console.error('Error loading version content:', err);
+        setError(err instanceof Error ? err.message : 'Error loading version content');
+      } finally {
+        setIsLoadingFiles(false);
+      }
+    }
+  };
+
+  const handleRestoreVersion = async () => {
+    if (selectedVersion === null) return;
+    
+    if (!confirm(`Are you sure you want to restore version ${selectedVersion} to your local workspace? This will overwrite your current local files.`)) {
+      return;
+    }
+
+    // Since we already have the version files loaded in `files` state (with sources),
+    // we can iterate through them and write them to the project.
+    // However, this is a "client-side" restore (overwriting HEAD with version content).
+    
+    setIsSaving(true);
+    try {
+      console.log(`↺ Restoring version ${selectedVersion}...`);
+      
+      // We need to write each file. This might be slow if there are many files.
+      // A better way would be if the server supported restore, but we'll do it iteratively for now.
+      
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const file of files) {
+        if (!file.source) continue;
+        
+        try {
+          await callTool('apps_script_write_file', {
+            projectId,
+            fileName: file.name,
+            content: file.source
+          });
+          successCount++;
+        } catch (e) {
+          console.error(`Failed to restore file ${file.name}:`, e);
+          failCount++;
+        }
+      }
+
+      if (failCount === 0) {
+        alert(`Successfully restored ${successCount} files from version ${selectedVersion}.`);
+        // Switch back to HEAD mode effectively (since we just overwrote HEAD)
+        setSelectedVersion(null);
+        await loadFiles(); // Reload to be sure
+      } else {
+        alert(`Restored ${successCount} files, but failed to restore ${failCount} files.`);
+      }
+    } catch (err) {
+      console.error('Error restoring version:', err);
+      setError(err instanceof Error ? err.message : 'Error restoring version');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const loadSpreadsheetContext = async () => {
     setSpreadsheetContext(prev => ({ ...prev, isLoading: true, error: undefined }));
     
@@ -367,7 +590,7 @@ export default function AppsScriptEditor({
         if (Array.isArray(result)) {
            parsedFiles = result.map(normalizeFile);
         }
-        // Handle content wrapper
+        // Handle raw MCP content wrapper (array format)
         else if (result.content && Array.isArray(result.content)) {
            if (typeof result.content[0] === 'string') {
              parsedFiles = result.content.map(normalizeFile);
@@ -386,12 +609,19 @@ export default function AppsScriptEditor({
                parsedFiles = result.content.map(normalizeFile);
              }
            }
-        } else if (result.files) {
+        }
+        // Handle useMCPTools parsed format: { content: { files: [...] } }
+        else if (result.content && typeof result.content === 'object' && !Array.isArray(result.content)) {
+          const list = result.content.files || [];
+          parsedFiles = list.map(normalizeFile);
+        }
+        else if (result.files) {
            parsedFiles = result.files.map(normalizeFile);
         }
 
         console.log('📄 Files loaded:', parsedFiles);
         setFiles(parsedFiles);
+        setIsAuthError(false);
         
         // Auto-select first file
         if (parsedFiles.length > 0 && !selectedFile) {
@@ -400,9 +630,13 @@ export default function AppsScriptEditor({
       } else {
         setError(result?.error || 'Failed to load files');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading files:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error loading files');
+      if (err.message?.includes('No Google OAuth token available') || err.message?.includes('sign in with Google')) {
+        setIsAuthError(true);
+      } else {
+        setError(err instanceof Error ? err.message : 'Unknown error loading files');
+      }
     } finally {
       setIsLoadingFiles(false);
     }
@@ -502,6 +736,12 @@ export default function AppsScriptEditor({
       handleSave();
     }
   };
+
+  const handleScroll = useCallback(() => {
+    if (textareaRef.current && lineNumbersRef.current) {
+      lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
+    }
+  }, []);
 
   const handlePushToGoogle = async () => {
     const confirmMsg = 'Push local changes to Google Apps Script and create a new version?\n\nThis will overwrite the cloud version with your local changes and create an immutable snapshot.';
@@ -637,33 +877,6 @@ export default function AppsScriptEditor({
       setRunResult({ success: false, error: err instanceof Error ? err.message : 'Unknown error' });
     } finally {
       setIsRunning(false);
-    }
-  };
-
-  const handleCreateVersion = async () => {
-    const description = prompt('Enter version description (optional):');
-    
-    try {
-      console.log(`📸 Creating version...`);
-      const result = await callTool('apps_script_create_version', { 
-        projectId, 
-        description: description || undefined 
-      });
-
-      if (result) {
-        let parsed = result;
-        if (result.content?.[0]?.text) {
-          try {
-            parsed = JSON.parse(result.content[0].text);
-          } catch {
-            parsed = result;
-          }
-        }
-        alert(`✅ Created version ${parsed.versionNumber}\n\n${parsed.description || ''}`);
-      }
-    } catch (err) {
-      console.error('Error creating version:', err);
-      setError(err instanceof Error ? err.message : 'Error creating version');
     }
   };
 
@@ -989,14 +1202,19 @@ You MUST respond with valid JSON only. No markdown code fences.
     };
 
     try {
-      let conversationHistory: Array<{
-        role: string;
-        content: string;
-        toolCalls?: any[];
-      }> = [
-        { role: 'system', content: systemInstruction },
-        { role: 'user', content: message }
-      ];
+      // Initialize conversation history with system instruction if empty
+      if (conversationHistoryRef.current.length === 0) {
+        conversationHistoryRef.current.push({ role: 'system', content: systemInstruction });
+        console.log('🆕 Starting new conversation with system instruction');
+      } else {
+        // Update system instruction with latest context (files, spreadsheet data, etc.)
+        conversationHistoryRef.current[0] = { role: 'system', content: systemInstruction };
+        console.log(`💬 Continuing conversation (${conversationHistoryRef.current.length} messages in history)`);
+      }
+      
+      // Add current user message to conversation history
+      conversationHistoryRef.current.push({ role: 'user', content: message });
+      
       let allToolCalls: any[] = [];
       let maxIterations = 5;
       let finalContent = '';
@@ -1006,8 +1224,9 @@ You MUST respond with valid JSON only. No markdown code fences.
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            message: conversationHistory,
-            context
+            message: conversationHistoryRef.current,
+            context,
+            model: selectedModel || undefined
           })
         });
 
@@ -1023,6 +1242,8 @@ You MUST respond with valid JSON only. No markdown code fences.
         }
 
         const executedTools = [];
+        let shouldBreakLoop = false; // Flag for terminal operations
+        
         for (const toolCall of data.toolCalls) {
           try {
             let result;
@@ -1066,6 +1287,14 @@ You MUST respond with valid JSON only. No markdown code fences.
                   projectId: toolCall.args.projectId || projectId,
                   description: toolCall.args.description
                 });
+                // Check success in various response formats
+                // useMCPTools returns: { content: { success: true, versionNumber: X } }
+                const versionData = result?.content || result;
+                const versionSuccess = versionData?.success !== false && !result?.error;
+                if (versionSuccess) {
+                  loadVersions();
+                  shouldBreakLoop = true; // Terminal operation - don't repeat
+                }
                 break;
               case 'apps_script_create_deployment':
                 result = await callTool('apps_script_create_deployment', {
@@ -1075,6 +1304,10 @@ You MUST respond with valid JSON only. No markdown code fences.
                   access: toolCall.args.access || 'ANYONE',
                   executeAs: toolCall.args.executeAs || 'USER_DEPLOYING'
                 });
+                // Terminal operation - don't repeat
+                if (result && !result.error) {
+                  shouldBreakLoop = true;
+                }
                 break;
               case 'apps_script_update_deployment':
                 result = await callTool('apps_script_update_deployment', {
@@ -1083,6 +1316,10 @@ You MUST respond with valid JSON only. No markdown code fences.
                   versionNumber: toolCall.args.versionNumber,
                   description: toolCall.args.description
                 });
+                // Terminal operation - don't repeat
+                if (result && !result.error) {
+                  shouldBreakLoop = true;
+                }
                 break;
               // Version history tools
               case 'apps_script_list_versions':
@@ -1136,20 +1373,42 @@ You MUST respond with valid JSON only. No markdown code fences.
 
         allToolCalls.push(...executedTools);
 
-        conversationHistory.push({
+        conversationHistoryRef.current.push({
           role: 'assistant',
-          content: data.content,
-          toolCalls: executedTools
+          content: data.content
         });
-        conversationHistory.push({
+        conversationHistoryRef.current.push({
           role: 'tool',
           content: JSON.stringify(executedTools.map(t => ({
             tool: t.name,
             result: t.result
           })))
         });
+        
+        // Break loop for terminal operations (create version, deployment, etc.)
+        // These are one-and-done actions that shouldn't be repeated
+        if (shouldBreakLoop) {
+          console.log('🛑 Breaking loop - terminal operation completed');
+          // Set finalContent to describe what was done
+          const successfulTools = executedTools.filter(t => !t.result?.error);
+          if (successfulTools.length > 0) {
+            finalContent = data.content || `Successfully executed: ${successfulTools.map(t => t.name).join(', ')}`;
+          }
+          break;
+        }
       }
 
+      // Add final assistant response to conversation history for context continuity
+      const lastMessage = conversationHistoryRef.current[conversationHistoryRef.current.length - 1];
+      if (lastMessage?.role !== 'assistant' || lastMessage?.content !== finalContent) {
+        conversationHistoryRef.current.push({
+          role: 'assistant',
+          content: finalContent
+        });
+      }
+      
+      console.log(`📝 Conversation history now has ${conversationHistoryRef.current.length} messages`);
+      
       return {
         content: finalContent,
         toolCalls: allToolCalls.length > 0 ? allToolCalls : undefined
@@ -1159,6 +1418,12 @@ You MUST respond with valid JSON only. No markdown code fences.
         content: `Error: ${error instanceof Error ? error.message : 'Failed to process message'}`
       };
     }
+  };
+  
+  // Function to clear conversation context
+  const clearConversationContext = () => {
+    conversationHistoryRef.current = [];
+    console.log('🗑️ Conversation context cleared');
   };
 
   const handleSendMessage = async () => {
@@ -1351,12 +1616,18 @@ You MUST respond with valid JSON only. No markdown code fences.
 
     if (toolCall.name === 'apps_script_list_deployments') {
       let data: any = toolCall.result;
+      // Handle different response formats:
+      // 1. Raw MCP format: { content: [{ text: "..." }] }
       if (typeof data?.content?.[0]?.text === 'string') {
         try {
           data = JSON.parse(data.content[0].text);
         } catch (e) {
           // Keep original
         }
+      }
+      // 2. useMCPTools parsed format: { content: { deployments: [...] } }
+      else if (data?.content && typeof data.content === 'object' && !Array.isArray(data.content)) {
+        data = data.content;
       }
       const deployments = data?.deployments || data || [];
       
@@ -1391,6 +1662,9 @@ You MUST respond with valid JSON only. No markdown code fences.
 
     if (toolCall.name === 'apps_script_create_version') {
       let data: any = toolCall.result;
+      
+      // Handle different response formats:
+      // 1. Raw MCP format: { content: [{ text: "..." }] }
       if (typeof data?.content?.[0]?.text === 'string') {
         try {
           data = JSON.parse(data.content[0].text);
@@ -1398,14 +1672,24 @@ You MUST respond with valid JSON only. No markdown code fences.
           // Keep original
         }
       }
+      // 2. useMCPTools parsed format: { content: { versionNumber: 1, ... } }
+      else if (data?.content && typeof data.content === 'object' && !Array.isArray(data.content)) {
+        data = data.content;
+      }
+      
+      // Extract version number from various possible locations
+      const versionNumber = data?.versionNumber 
+        || data?.version?.versionNumber 
+        || data?.result?.versionNumber;
+      const description = data?.description || data?.version?.description || '';
       
       return (
         <div className="mt-2 p-2 bg-zinc-800 rounded text-xs">
           <div className="flex items-center gap-1.5 text-amber-400 font-medium">
             <History className="w-3 h-3" />
-            Created Version {data?.versionNumber || data?.version?.versionNumber || '?'}
+            Created Version {versionNumber || '?'}
           </div>
-          {data?.description && <p className="text-zinc-400 mt-1">{data.description}</p>}
+          {description && <p className="text-zinc-400 mt-1">{description}</p>}
         </div>
       );
     }
@@ -1413,12 +1697,18 @@ You MUST respond with valid JSON only. No markdown code fences.
     // Version history tools
     if (toolCall.name === 'apps_script_list_versions') {
       let data: any = toolCall.result;
+      // Handle different response formats:
+      // 1. Raw MCP format: { content: [{ text: "..." }] }
       if (typeof data?.content?.[0]?.text === 'string') {
         try {
           data = JSON.parse(data.content[0].text);
         } catch (e) {
           // Keep original
         }
+      }
+      // 2. useMCPTools parsed format: { content: { versions: [...] } }
+      else if (data?.content && typeof data.content === 'object' && !Array.isArray(data.content)) {
+        data = data.content;
       }
       const versions = data?.versions || data || [];
       
@@ -1447,12 +1737,18 @@ You MUST respond with valid JSON only. No markdown code fences.
 
     if (toolCall.name === 'apps_script_get_version_content') {
       let data: any = toolCall.result;
+      // Handle different response formats:
+      // 1. Raw MCP format: { content: [{ text: "..." }] }
       if (typeof data?.content?.[0]?.text === 'string') {
         try {
           data = JSON.parse(data.content[0].text);
         } catch (e) {
           // Keep original
         }
+      }
+      // 2. useMCPTools parsed format: { content: { files: [...] } }
+      else if (data?.content && typeof data.content === 'object' && !Array.isArray(data.content)) {
+        data = data.content;
       }
       const files = data?.files || [];
       
@@ -1548,8 +1844,36 @@ You MUST respond with valid JSON only. No markdown code fences.
     );
   };
 
+  const handleAuthRetry = () => {
+    setIsAuthError(false);
+    loadFiles();
+    loadVersions();
+  };
+
   return (
     <div className="flex flex-col h-full bg-zinc-900 text-zinc-200">
+      {/* Auth Error Banner */}
+      {isAuthError && (
+        <div className="bg-blue-900/30 border-b border-blue-500/30 px-4 py-3 flex items-center justify-between animate-in slide-in-from-top-2 fade-in">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-500/20 rounded-full">
+              <AlertCircle className="w-4 h-4 text-blue-400" />
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-blue-200">Authentication Required</h3>
+              <p className="text-xs text-blue-300/80">Please sign in with Google to access this Apps Script project.</p>
+            </div>
+          </div>
+          <button 
+            onClick={handleAuthRetry}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-2"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Retry Connection
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-700 bg-zinc-800">
         <div className="flex items-center gap-3">
@@ -1677,14 +2001,6 @@ You MUST respond with valid JSON only. No markdown code fences.
             Run
           </button>
 
-          <button
-            onClick={handleCreateVersion}
-            className="p-1.5 hover:bg-zinc-700 rounded transition-colors text-zinc-400 hover:text-white"
-            title="Create Version (Snapshot)"
-          >
-            <History className="w-4 h-4" />
-          </button>
-
           <div className="w-px h-5 bg-zinc-700 mx-1" />
           
           <button
@@ -1721,7 +2037,7 @@ You MUST respond with valid JSON only. No markdown code fences.
         {/* Sidebar - File List */}
         <div className="w-64 border-r border-zinc-700 flex flex-col bg-zinc-850">
           <div className="p-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-            Files
+            Files {selectedVersion !== null && `(v${selectedVersion})`}
           </div>
           <div className="flex-1 overflow-y-auto">
             {isLoadingFiles ? (
@@ -1758,6 +2074,88 @@ You MUST respond with valid JSON only. No markdown code fences.
               </div>
             )}
           </div>
+
+          {/* Version History Selector */}
+          <div className="border-t border-zinc-700">
+            <button
+              onClick={() => setShowVersionDropdown(!showVersionDropdown)}
+              className="w-full flex items-center justify-between p-3 text-xs font-semibold text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <GitBranch className="w-3.5 h-3.5" />
+                <span>
+                  {selectedVersion ? `v${selectedVersion}` : 'Current (HEAD)'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                {isLoadingVersions && <Loader2 className="w-3 h-3 animate-spin" />}
+                {showVersionDropdown ? (
+                  <ChevronUp className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5" />
+                )}
+              </div>
+            </button>
+
+            {showVersionDropdown && (
+              <div className="max-h-48 overflow-y-auto bg-zinc-900 border-b border-zinc-700 shadow-inner">
+                <button
+                  onClick={() => handleVersionSelect(null)}
+                  className={`w-full text-left px-4 py-2 text-xs flex items-center justify-between ${
+                    selectedVersion === null 
+                      ? 'bg-blue-600/20 text-blue-400' 
+                      : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
+                  }`}
+                >
+                  <span className="font-medium">Current (HEAD)</span>
+                  <span className="opacity-50">Local</span>
+                </button>
+                
+                {versions.map((v) => (
+                  <button
+                    key={v.versionNumber}
+                    onClick={() => handleVersionSelect(v.versionNumber)}
+                    className={`w-full text-left px-4 py-2 text-xs border-t border-zinc-800/50 ${
+                      selectedVersion === v.versionNumber
+                        ? 'bg-blue-600/20 text-blue-400'
+                        : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="font-mono font-medium">v{v.versionNumber}</span>
+                      <span className="opacity-50 text-[10px]">
+                        {new Date(v.createTime).toLocaleDateString()}
+                      </span>
+                    </div>
+                    {v.description && (
+                      <div className="truncate opacity-70 text-[10px]">
+                        {v.description}
+                      </div>
+                    )}
+                  </button>
+                ))}
+                
+                {versions.length === 0 && !isLoadingVersions && (
+                  <div className="px-4 py-3 text-xs text-zinc-600 text-center italic">
+                    No versions created yet
+                  </div>
+                )}
+              </div>
+            )}
+
+            {selectedVersion !== null && (
+              <div className="p-2 bg-zinc-900 border-t border-zinc-700">
+                <button
+                  onClick={handleRestoreVersion}
+                  disabled={isSaving}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs rounded border border-zinc-700 transition-colors"
+                >
+                  {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />}
+                  Restore to Local
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Editor Area */}
@@ -1783,13 +2181,26 @@ You MUST respond with valid JSON only. No markdown code fences.
               </div>
             </div>
           ) : selectedFile ? (
-            <textarea
-              value={fileContent}
-              onChange={(e) => setFileContent(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="flex-1 w-full h-full bg-zinc-900 text-zinc-300 font-mono text-sm p-4 resize-none focus:outline-none leading-relaxed custom-scrollbar"
-              spellCheck={false}
-            />
+            <div className="flex-1 flex overflow-hidden relative">
+              <div
+                ref={lineNumbersRef}
+                className="h-full py-4 pr-3 pl-2 text-right bg-zinc-900 border-r border-zinc-800 select-none overflow-hidden text-zinc-600 font-mono text-sm leading-relaxed"
+                style={{ minWidth: '3rem' }}
+              >
+                {fileContent.split('\n').map((_, i) => (
+                  <div key={i}>{i + 1}</div>
+                ))}
+              </div>
+              <textarea
+                ref={textareaRef}
+                value={fileContent}
+                onChange={(e) => setFileContent(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onScroll={handleScroll}
+                className="flex-1 w-full h-full bg-zinc-900 text-zinc-300 font-mono text-sm p-4 resize-none focus:outline-none leading-relaxed custom-scrollbar whitespace-pre"
+                spellCheck={false}
+              />
+            </div>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-zinc-600">
               <Code className="w-12 h-12 mb-4 opacity-20" />
@@ -1810,6 +2221,15 @@ You MUST respond with valid JSON only. No markdown code fences.
                 <h3 className="text-sm font-semibold text-white">AI Assistant</h3>
                 <div className="flex items-center gap-2">
                 <p className="text-[10px] text-zinc-500">Ask about your code</p>
+                  {conversationHistoryRef.current.length > 1 && (
+                    <button
+                      onClick={clearConversationContext}
+                      className="text-[10px] text-zinc-500 hover:text-red-400 transition-colors"
+                      title="Clear conversation context"
+                    >
+                      ({conversationHistoryRef.current.length - 1} msgs) Clear
+                    </button>
+                  )}
                   {conversationsConnected ? (
                     <span className="flex items-center gap-1 text-[10px] text-green-400">
                       <Cloud className="w-3 h-3" />
@@ -1823,6 +2243,54 @@ You MUST respond with valid JSON only. No markdown code fences.
                     </span>
                   )}
                 </div>
+              </div>
+              {/* Model Selector */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowModelDropdown(!showModelDropdown)}
+                  className="flex items-center gap-1 px-2 py-1 text-[10px] bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 rounded text-zinc-300 transition-colors"
+                  title="Select AI Model"
+                >
+                  <Bot className="w-3 h-3" />
+                  <span className="max-w-[60px] truncate">
+                    {selectedModel ? selectedModel.replace('gemini-', '').replace('-preview', '') : 'Model'}
+                  </span>
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+                {showModelDropdown && (
+                  <div className="absolute right-0 top-full mt-1 w-56 bg-zinc-800 border border-zinc-600 rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto">
+                    {isLoadingModels ? (
+                      <div className="p-3 text-center text-zinc-500 text-xs">
+                        <Loader2 className="w-4 h-4 animate-spin mx-auto mb-1" />
+                        Loading models...
+                      </div>
+                    ) : availableModels.length === 0 ? (
+                      <div className="p-3 text-center text-zinc-500 text-xs">
+                        No models available
+                      </div>
+                    ) : (
+                      availableModels.map((model) => (
+                        <button
+                          key={model.modelId}
+                          onClick={() => {
+                            setSelectedModel(model.modelId);
+                            setShowModelDropdown(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-xs hover:bg-zinc-700 transition-colors flex items-center justify-between ${
+                            selectedModel === model.modelId ? 'bg-violet-600/20 text-violet-300' : 'text-zinc-300'
+                          }`}
+                        >
+                          <span className="truncate">{model.displayName || model.modelId}</span>
+                          {model.modelId === defaultModel && (
+                            <span className="text-[9px] px-1.5 py-0.5 bg-violet-500/20 text-violet-400 rounded ml-2">
+                              default
+                            </span>
+                          )}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 

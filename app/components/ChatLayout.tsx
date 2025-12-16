@@ -16,6 +16,7 @@ export default function ChatLayout() {
     { id: 'chat-1', title: 'Chat 1', active: true, type: 'chat' },
   ]);
   const [activeConversationId, setActiveConversationId] = useState<string | undefined>();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Get primary server key for opening projects
   const primaryServerKey = servers[0]?.server_key || '';
@@ -162,6 +163,8 @@ export default function ChatLayout() {
         onSelectConversation={handleSelectConversation}
         activeConversationId={activeConversationId}
         onSignOut={handleSignOut}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
       <TabWindow 
         tabs={tabs}
