@@ -30,7 +30,8 @@ import {
   ChevronDown,
   ChevronUp,
   GitBranch,
-  RotateCcw
+  RotateCcw,
+  Settings
 } from 'lucide-react';
 
 interface AppsScriptEditorProps {
@@ -38,6 +39,7 @@ interface AppsScriptEditorProps {
   projectName?: string;
   serverKey: string;
   serviceName?: string;
+  onConversationChange?: (conversationId: string | undefined) => void;
 }
 
 interface ScriptFile {
@@ -78,7 +80,8 @@ export default function AppsScriptEditor({
   projectId, 
   projectName, 
   serverKey, 
-  serviceName = 'apps-script' 
+  serviceName = 'apps-script',
+  onConversationChange
 }: AppsScriptEditorProps) {
   // State
   const [files, setFiles] = useState<ScriptFile[]>([]);
@@ -89,6 +92,7 @@ export default function AppsScriptEditor({
   const [isSaving, setIsSaving] = useState(false);
   const [isPushing, setIsPushing] = useState(false);
   const [isPulling, setIsPulling] = useState(false);
+  const [isDeploying, setIsDeploying] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [runResult, setRunResult] = useState<{ success: boolean; result?: any; error?: string; logs?: string[] } | null>(null);
   const [showRunDialog, setShowRunDialog] = useState(false);
@@ -268,6 +272,8 @@ export default function AppsScriptEditor({
         if (existing) {
           console.log('📂 Loading existing conversation for project:', projectId);
           await loadConversation(existing.id);
+          // Notify parent about the conversation ID
+          onConversationChange?.(existing.id);
         } else {
           // Create new conversation for this project
           console.log('📝 Creating new conversation for project:', projectId);
@@ -279,6 +285,8 @@ export default function AppsScriptEditor({
           });
           if (conv) {
             await loadConversation(conv.id);
+            // Notify parent about the conversation ID
+            onConversationChange?.(conv.id);
           }
         }
       } catch (err: any) {
@@ -839,6 +847,19 @@ export default function AppsScriptEditor({
     }
   };
 
+  const handleDeployDevVersion = async () => {
+    setIsDeploying(true);
+    setError(null);
+    try {
+      alert('Deploy Dev Version functionality coming soon!');
+    } catch (err) {
+      console.error('Error deploying dev version:', err);
+      setError(err instanceof Error ? err.message : 'Error deploying dev version');
+    } finally {
+      setIsDeploying(false);
+    }
+  };
+
   const handleRunFunction = async () => {
     if (!functionToRun.trim()) {
       setError('Please enter a function name');
@@ -857,8 +878,10 @@ export default function AppsScriptEditor({
       });
 
       if (result) {
-        // Parse the result if it's a string
+        // Parse the result from various possible formats
         let parsed = result;
+        
+        // Format 1: Raw MCP format { content: [{ text: "..." }] }
         if (result.content?.[0]?.text) {
           try {
             parsed = JSON.parse(result.content[0].text);
@@ -866,6 +889,22 @@ export default function AppsScriptEditor({
             parsed = result;
           }
         }
+        // Format 2: useMCPTools parsed format { content: { success: true, ... } }
+        else if (result.content && typeof result.content === 'object' && !Array.isArray(result.content)) {
+          parsed = result.content;
+        }
+        
+        // Ensure we have a proper result object with success property
+        // If parsed doesn't have a 'success' property, wrap it
+        if (typeof parsed?.success !== 'boolean') {
+          // This might be the raw function return value, assume success
+          parsed = {
+            success: true,
+            result: parsed,
+            logs: []
+          };
+        }
+        
         setRunResult(parsed);
         if (!parsed.success) {
           setError(parsed.error || 'Function execution failed');
@@ -920,6 +959,16 @@ export default function AppsScriptEditor({
           projectId: 'string (The project ID)',
           fileName: 'string (The file name - can be new or existing, e.g., "NewPage.html", "Utils.gs")',
           content: 'string (The complete file content to write)'
+        }
+      },
+      // Function execution
+      {
+        name: 'apps_script_run_function',
+        description: 'Execute a function in the Apps Script project remotely. Runs against the most recent saved version. Use this to test functions, retrieve data, or trigger operations like listing triggers, getting spreadsheet data, etc.',
+        parameters: {
+          projectId: 'string (The project ID)',
+          functionName: 'string (Name of the function to execute, e.g., "listAllTriggers", "myFunction")',
+          parameters: 'array (Optional - array of parameters to pass to the function)'
         }
       },
       // Deployment tools
@@ -1063,7 +1112,18 @@ CAPABILITIES:
 6. **List deployments**: Use apps_script_list_deployments to see existing deployments and their URLs
 7. **Update deployment**: Use apps_script_update_deployment to update an existing deployment with new code
 8. **Create versions**: Use apps_script_create_version to create a snapshot before deployment
-${spreadsheetContext.spreadsheetId ? `9. **Read spreadsheet data**: Use sheets_get_range or sheets_get_headers to get live data` : ''}
+9. **Run functions remotely**: Use apps_script_run_function to execute any function in the script
+   - Use this for operations like: listing triggers, testing functions, getting data
+   - Example: To list triggers, call a function like "listAllTriggers" if it exists in the code
+   - The function must exist in the script files - check with apps_script_read_file first if unsure
+${spreadsheetContext.spreadsheetId ? `10. **Read spreadsheet data**: Use sheets_get_range or sheets_get_headers to get live data` : ''}
+
+🔄 AFTER EXECUTING TOOLS:
+Always explain what the tool results mean in plain language:
+- For list_files: "I found X files in your project: ..."
+- For run_function: Explain what the function returned and what it means
+- For deployments: Highlight the web URL and access instructions
+- Don't just show raw data - provide helpful context!
 
 DEPLOYMENT INSTRUCTIONS:
 When user asks to "deploy", "get a URL", "make it accessible", "배포해줘":
@@ -1353,6 +1413,14 @@ You MUST respond with valid JSON only. No markdown code fences.
                   rows: toolCall.args.rows || 5
                 });
                 break;
+              // Function execution
+              case 'apps_script_run_function':
+                result = await callTool('apps_script_run_function', {
+                  projectId: toolCall.args.projectId || projectId,
+                  functionName: toolCall.args.functionName,
+                  parameters: toolCall.args.parameters
+                });
+                break;
               default:
                 result = { error: `Unknown tool: ${toolCall.name}` };
             }
@@ -1506,19 +1574,38 @@ You MUST respond with valid JSON only. No markdown code fences.
 
   const formatToolResult = (toolCall: any) => {
     if (toolCall.name === 'apps_script_list_files') {
-      const files = toolCall.result?.content || toolCall.result || [];
+      let files: any[] = [];
+      
+      // Parse MCP content format
+      if (typeof toolCall.result?.content?.[0]?.text === 'string') {
+        try {
+          files = JSON.parse(toolCall.result.content[0].text);
+        } catch (e) {
+          files = [];
+        }
+      } else if (Array.isArray(toolCall.result?.content)) {
+        files = toolCall.result.content;
+      } else if (Array.isArray(toolCall.result)) {
+        files = toolCall.result;
+      }
+      
       return (
         <div className="mt-2 p-2 bg-zinc-800 rounded text-xs">
           <div className="flex items-center gap-1.5 mb-1.5 text-blue-400 font-medium">
             <FileCode className="w-3 h-3" />
-            Files in Project
+            📁 Files in Project ({files.length})
           </div>
-          <div className="space-y-0.5">
-            {(Array.isArray(files) ? files : []).map((file: any, idx: number) => (
-              <div key={idx} className="text-zinc-300 font-mono">
-                {typeof file === 'string' ? file : file.name}
+          <div className="space-y-1">
+            {files.map((file: any, idx: number) => (
+              <div key={idx} className="flex items-center gap-2 text-zinc-300 font-mono p-1 bg-zinc-900 rounded">
+                <span className="text-zinc-400">{file.type === 'server_js' ? '📄' : file.type === 'html' ? '🌐' : '📋'}</span>
+                <span>{file.displayName || file.name}</span>
+                <span className="text-zinc-500 text-[10px]">({file.type})</span>
               </div>
             ))}
+            {files.length === 0 && (
+              <p className="text-zinc-500">No files found</p>
+            )}
           </div>
         </div>
       );
@@ -1835,10 +1922,94 @@ You MUST respond with valid JSON only. No markdown code fences.
       );
     }
 
+    // Run function results
+    if (toolCall.name === 'apps_script_run_function') {
+      let data: any = toolCall.result;
+      
+      // Parse MCP content format: { content: [{ text: "..." }] }
+      if (typeof data?.content?.[0]?.text === 'string') {
+        try {
+          data = JSON.parse(data.content[0].text);
+        } catch (e) {
+          // Keep original
+        }
+      }
+      // Parse useMCPTools format: { content: { success: true, ... } }
+      else if (data?.content && typeof data.content === 'object' && !Array.isArray(data.content)) {
+        data = data.content;
+      }
+      
+      // If data doesn't have success property, it might be the raw result - wrap it
+      if (typeof data?.success !== 'boolean') {
+        data = {
+          success: true,
+          result: data,
+          logs: []
+        };
+      }
+      
+      const success = data?.success;
+      const functionName = data?.functionName || toolCall.args?.functionName || 'function';
+      const result = data?.result;
+      const error = data?.error;
+      const logs = data?.logs || [];
+      
+      return (
+        <div className="mt-2 p-2 bg-zinc-800 rounded text-xs">
+          <div className={`flex items-center gap-1.5 mb-1.5 ${success ? 'text-green-400' : 'text-red-400'} font-medium`}>
+            <Play className="w-3 h-3" />
+            {success ? `✅ ${functionName}()` : `❌ ${functionName}() failed`}
+          </div>
+          {error && (
+            <div className="p-1.5 bg-red-900/30 rounded text-red-300 mb-2">
+              {error}
+            </div>
+          )}
+          {result !== undefined && result !== null && (
+            <div className="space-y-1">
+              <p className="text-zinc-400">Result:</p>
+              <pre className="text-zinc-300 whitespace-pre-wrap overflow-x-auto max-h-40 overflow-y-auto bg-zinc-900 p-2 rounded">
+                {typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result)}
+              </pre>
+            </div>
+          )}
+          {logs.length > 0 && (
+            <div className="mt-2 space-y-1">
+              <p className="text-zinc-400">Logs:</p>
+              <div className="bg-zinc-900 p-1.5 rounded max-h-24 overflow-y-auto">
+                {logs.map((log: string, idx: number) => (
+                  <p key={idx} className="text-zinc-500 text-[10px] font-mono">{log}</p>
+                ))}
+              </div>
+            </div>
+          )}
+          {success && result === undefined && !error && (
+            <p className="text-zinc-400 italic">Function executed successfully (no return value)</p>
+          )}
+        </div>
+      );
+    }
+
+    // Default fallback - try to parse JSON and show nicely
+    let displayData = toolCall.result;
+    if (typeof displayData?.content?.[0]?.text === 'string') {
+      try {
+        displayData = JSON.parse(displayData.content[0].text);
+      } catch (e) {
+        displayData = displayData.content[0].text;
+      }
+    }
+    
     return (
       <div className="mt-2 p-2 bg-zinc-800 rounded text-xs">
-        <pre className="text-zinc-300 whitespace-pre-wrap">
-          {JSON.stringify(toolCall.result, null, 2).substring(0, 300)}
+        <div className="flex items-center gap-1.5 mb-1.5 text-zinc-400 font-medium">
+          <Settings className="w-3 h-3" />
+          {toolCall.name.replace(/_/g, ' ')}
+        </div>
+        <pre className="text-zinc-300 whitespace-pre-wrap overflow-x-auto max-h-40 overflow-y-auto">
+          {typeof displayData === 'object' 
+            ? JSON.stringify(displayData, null, 2) 
+            : String(displayData).substring(0, 500)}
         </pre>
       </div>
     );
@@ -1978,6 +2149,25 @@ You MUST respond with valid JSON only. No markdown code fences.
               Pulled!
             </div>
           )}
+
+          <button
+            onClick={handleDeployDevVersion}
+            disabled={isDeploying || isPushing || isPulling}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Deploy Dev Version"
+          >
+            {isDeploying ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Deploying...
+              </>
+            ) : (
+              <>
+                <Cloud className="w-3.5 h-3.5" />
+                Deploy Dev
+              </>
+            )}
+          </button>
 
           <div className="w-px h-5 bg-zinc-700 mx-1" />
 

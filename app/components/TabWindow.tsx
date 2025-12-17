@@ -27,6 +27,7 @@ interface TabWindowProps {
   onTabClose: (id: string) => void;
   onNewTab: () => void;
   onOpenProject: (projectId: string, projectName: string, serverKey: string, serviceName: string) => void;
+  onTabConversationChange?: (tabId: string, conversationId: string | undefined) => void;
 }
 
 export default function TabWindow({ 
@@ -35,7 +36,8 @@ export default function TabWindow({
   onTabSwitch, 
   onTabClose,
   onNewTab,
-  onOpenProject
+  onOpenProject,
+  onTabConversationChange
 }: TabWindowProps) {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -125,11 +127,14 @@ export default function TabWindow({
                 projectName={tab.data.projectName}
                 serverKey={tab.data.serverKey!}
                 serviceName={tab.data.serviceName}
+                onConversationChange={(conversationId) => onTabConversationChange?.(tab.id, conversationId)}
               />
             ) : (
               <ChatArea 
                 tabId={tab.id} 
+                conversationId={tab.data?.conversationId}
                 onOpenProject={onOpenProject}
+                onConversationChange={(conversationId) => onTabConversationChange?.(tab.id, conversationId)}
               />
             )}
           </div>

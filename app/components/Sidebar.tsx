@@ -204,7 +204,9 @@ export default function Sidebar({ onNewChat, onSelectConversation, activeConvers
           /* Collapsed view - just icons */
           <div className="space-y-1 py-2">
             {filteredConversations.slice(0, 10).map((conversation) => {
-              const isAppsScript = conversation.metadata?.source === 'appsscript-editor';
+              // Check by project_id presence (more reliable than source for legacy conversations)
+              const meta = conversation.metadata as { source?: string; project_id?: string } | undefined;
+              const isAppsScript = meta?.source === 'appsscript-editor' || !!meta?.project_id;
               const isActive = activeConversationId === conversation.id;
               
               return (
@@ -238,7 +240,9 @@ export default function Sidebar({ onNewChat, onSelectConversation, activeConvers
                   </div>
                   <div className="space-y-1">
                     {convs.map((conversation) => {
-                      const isAppsScript = conversation.metadata?.source === 'appsscript-editor';
+                      // Check by project_id presence (more reliable than source for legacy conversations)
+                      const meta = conversation.metadata as { source?: string; project_id?: string } | undefined;
+                      const isAppsScript = meta?.source === 'appsscript-editor' || !!meta?.project_id;
                       const isActive = activeConversationId === conversation.id;
                       
                       return (

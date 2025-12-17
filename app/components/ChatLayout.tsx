@@ -81,17 +81,38 @@ export default function ChatLayout() {
     
     if (id === activeTab && newTabs.length > 0) {
       const newActiveIndex = Math.min(tabIndex, newTabs.length - 1);
-      setActiveTab(newTabs[newActiveIndex].id);
+      const newActiveTab = newTabs[newActiveIndex];
+      setActiveTab(newActiveTab.id);
       // Ensure the new active tab is marked as active in the state
-      newTabs[newActiveIndex].active = true;
+      newActiveTab.active = true;
+      // Update active conversation ID based on new active tab
+      setActiveConversationId(newActiveTab.data?.conversationId);
     }
     
     setTabs(newTabs);
   };
 
+  // Handle conversation ID updates from AppsScriptEditor tabs
+  const handleTabConversationChange = (tabId: string, conversationId: string | undefined) => {
+    setTabs(prevTabs => 
+      prevTabs.map(tab => 
+        tab.id === tabId 
+          ? { ...tab, data: { ...tab.data, conversationId } }
+          : tab
+      )
+    );
+    // If this is the active tab, update the active conversation ID
+    if (tabId === activeTab) {
+      setActiveConversationId(conversationId);
+    }
+  };
+
   const switchTab = (id: string) => {
     setActiveTab(id);
     setTabs(tabs.map(tab => ({ ...tab, active: tab.id === id })));
+    // Update active conversation ID based on the tab's stored conversation ID
+    const targetTab = tabs.find(tab => tab.id === id);
+    setActiveConversationId(targetTab?.data?.conversationId);
   };
 
   const handleSelectConversation = (conversation: Conversation) => {
@@ -104,7 +125,8 @@ export default function ChatLayout() {
     } | undefined;
 
     // If it's an AppsScript conversation, open the project tab
-    if (meta?.source === 'appsscript-editor' && meta?.project_id) {
+    // Check by project_id presence (more reliable than source for legacy conversations)
+    if (meta?.project_id) {
       handleOpenProject(
         meta.project_id,
         meta.project_name || conversation.title,
@@ -173,6 +195,7 @@ export default function ChatLayout() {
         onTabClose={closeTab}
         onNewTab={createNewTab}
         onOpenProject={handleOpenProject}
+        onTabConversationChange={handleTabConversationChange}
       />
     </div>
   );

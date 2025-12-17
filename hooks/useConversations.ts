@@ -252,8 +252,8 @@ export function useConversations(serverKey: string) {
       const result = await callConversationTool('conv_create_conversation', {
         title,
         metadata: {
-          ...metadata,
-          source: 'website'
+          source: 'website',  // Default source
+          ...metadata         // Passed metadata can override the default
         }
       });
       

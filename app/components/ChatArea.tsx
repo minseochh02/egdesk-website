@@ -31,7 +31,9 @@ export interface Message {
 
 interface ChatAreaProps {
   tabId: string;
+  conversationId?: string;
   onOpenProject?: (projectId: string, projectName: string, serverKey: string, serviceName: string) => void;
+  onConversationChange?: (conversationId: string | undefined) => void;
 }
 
 interface MCPServiceCardProps {
@@ -61,7 +63,7 @@ function MCPServiceCard({ serverName, serviceName, description, serverKey }: MCP
   );
 }
 
-export default function ChatArea({ tabId, onOpenProject }: ChatAreaProps) {
+export default function ChatArea({ tabId, conversationId: initialConversationId, onOpenProject, onConversationChange }: ChatAreaProps) {
   const { user, session } = useAuth();
   const [showFileTree, setShowFileTree] = useState(false);
   const [selectedServer, setSelectedServer] = useState<string | null>(null);
@@ -75,8 +77,11 @@ export default function ChatArea({ tabId, onOpenProject }: ChatAreaProps) {
   // Conversation persistence hook
   const {
     currentConversation,
+    messages: persistedMessages,
     saveMessage,
     initializeForTab,
+    loadConversation,
+    createConversation,
     isConnected: isConversationConnected,
     pendingCount,
     isLoading: conversationLoading,
@@ -349,9 +354,18 @@ export default function ChatArea({ tabId, onOpenProject }: ChatAreaProps) {
     const initConversation = async () => {
       if (selectedServer && user) {
         try {
-          console.log(`💬 Initializing conversation for tab ${tabId}...`);
-          await initializeForTab(tabId);
-          console.log(`✅ Conversation initialized for tab ${tabId}`);
+          // If we have an initial conversation ID (from sidebar click), load it
+          if (initialConversationId) {
+            console.log(`📂 Loading existing conversation ${initialConversationId}...`);
+            await loadConversation(initialConversationId);
+            onConversationChange?.(initialConversationId);
+            console.log(`✅ Conversation loaded: ${initialConversationId}`);
+          } else {
+            console.log(`💬 Initializing new conversation for tab ${tabId}...`);
+            const conv = await initializeForTab(tabId);
+            onConversationChange?.(conv?.id);
+            console.log(`✅ Conversation initialized for tab ${tabId}`);
+          }
         } catch (err) {
           console.warn('⚠️ Failed to initialize conversation (offline mode):', err);
           // Continue without persistence - messages will be queued
@@ -360,9 +374,26 @@ export default function ChatArea({ tabId, onOpenProject }: ChatAreaProps) {
     };
 
     initConversation();
-  }, [selectedServer, user, tabId, initializeForTab]);
+  }, [selectedServer, user, tabId, initialConversationId]);
 
-  const handleProjectClick = (project: any) => {
+  // Sync persisted messages to local state when loaded from conversation
+  useEffect(() => {
+    if (persistedMessages && persistedMessages.length > 0) {
+      console.log(`📨 Syncing ${persistedMessages.length} persisted messages to UI`);
+      const mapped: Message[] = persistedMessages.map(msg => ({
+        id: msg.id,
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content || '',
+        timestamp: new Date(msg.timestamp),
+        files: msg.metadata?.files as UploadedFile[] | undefined,
+        toolCalls: msg.metadata?.toolCalls,
+        error: msg.metadata?.error,
+      }));
+      setMessages(mapped);
+    }
+  }, [persistedMessages]);
+
+  const handleProjectClick = async (project: any) => {
     if (onOpenProject && selectedServer && appsScriptServiceName) {
       let projectId = '';
       let projectName = '';
@@ -383,6 +414,20 @@ export default function ChatArea({ tabId, onOpenProject }: ChatAreaProps) {
       }
       
       if (projectId) {
+        // Create a new conversation for this project
+        try {
+          console.log(`📝 Creating new conversation for project: ${projectName || projectId}`);
+          const conv = await createConversation(`Apps Script: ${projectName || projectId}`, {
+            project_id: projectId,
+            project_name: projectName,
+            user_email: user?.email,
+            source: 'appsscript-editor',
+          });
+          console.log(`✅ Conversation created: ${conv?.id}`);
+        } catch (err) {
+          console.warn('⚠️ Failed to create conversation, project will create its own:', err);
+        }
+        
         onOpenProject(projectId, projectName, selectedServer, appsScriptServiceName);
         return;
       }
