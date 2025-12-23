@@ -71,10 +71,11 @@ export default function AppsScriptEditor({
   const {
     files, setFiles, selectedFile, setSelectedFile, fileContent, setFileContent,
     isLoadingFiles, isLoadingContent, isSaving, isPushing, isPulling, isDeploying,
+    isPullingDev, isPushingProd, isPullingProd,
     error, setError, saveStatus, syncStatus, lastPushedVersion, isAuthError, setIsAuthError,
     loadFiles, handleFileSelect, handleSave, handlePushToGoogle, handlePullFromGoogle,
-    handleDeployDevVersion, handleRestoreVersion
-  } = useAppsScriptFiles({ projectId, projectName, callTool, createSpreadsheetWithScript });
+    handlePushToDev, handlePullFromDev, handlePushDevToProd, handlePullFromProd, hasDevEnvironment, handleRestoreVersion
+  } = useAppsScriptFiles({ projectId, projectName, devScriptId, callTool, createSpreadsheetWithScript });
 
   // Versions Hook
   const {
@@ -339,7 +340,14 @@ export default function AppsScriptEditor({
         syncStatus={syncStatus}
         lastPushedVersion={lastPushedVersion}
         isDeploying={isDeploying}
-        onDeployDevVersion={handleDeployDevVersion}
+        isPullingDev={isPullingDev}
+        isPushingProd={isPushingProd}
+        isPullingProd={isPullingProd}
+        onPushToDev={handlePushToDev}
+        onPullFromDev={handlePullFromDev}
+        onPushDevToProd={handlePushDevToProd}
+        onPullFromProd={handlePullFromProd}
+        hasDevEnvironment={hasDevEnvironment}
         isRunning={isRunning}
         onOpenRunDialog={() => {
           setShowRunDialog(true);

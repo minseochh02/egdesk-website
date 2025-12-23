@@ -44,7 +44,19 @@ export default function ChatLayout() {
     setActiveTab(newId);
   };
 
-  const handleOpenProject = (projectId: string, projectName: string, serverKey: string, serviceName: string) => {
+  const handleOpenProject = (
+    projectId: string, 
+    projectName: string, 
+    serverKey: string, 
+    serviceName: string,
+    devEnvironment?: {
+      devScriptId?: string;
+      devSpreadsheetId?: string;
+      devSpreadsheetUrl?: string;
+      prodSpreadsheetId?: string;
+      prodSpreadsheetUrl?: string;
+    }
+  ) => {
     const newId = `project-${projectId}`;
     
     // Check if tab already exists
@@ -66,7 +78,13 @@ export default function ChatLayout() {
           projectId,
           projectName,
           serverKey,
-          serviceName
+          serviceName,
+          // Include DEV environment info from the project
+          devScriptId: devEnvironment?.devScriptId,
+          devSpreadsheetId: devEnvironment?.devSpreadsheetId,
+          devSpreadsheetUrl: devEnvironment?.devSpreadsheetUrl,
+          prodSpreadsheetId: devEnvironment?.prodSpreadsheetId,
+          prodSpreadsheetUrl: devEnvironment?.prodSpreadsheetUrl,
         }
       }
     ]);

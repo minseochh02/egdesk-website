@@ -4,6 +4,7 @@ import { ScriptFile } from './types';
 interface UseAppsScriptFilesProps {
   projectId: string;
   projectName?: string;
+  devScriptId?: string;
   callTool: (name: string, args: any) => Promise<any>;
   createSpreadsheetWithScript: (title: string, scriptTitle: string, files: any[]) => Promise<any>;
 }
@@ -11,6 +12,7 @@ interface UseAppsScriptFilesProps {
 export function useAppsScriptFiles({
   projectId,
   projectName,
+  devScriptId,
   callTool,
   createSpreadsheetWithScript
 }: UseAppsScriptFilesProps) {
@@ -23,6 +25,9 @@ export function useAppsScriptFiles({
   const [isPushing, setIsPushing] = useState(false);
   const [isPulling, setIsPulling] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
+  const [isPullingDev, setIsPullingDev] = useState(false);
+  const [isPushingProd, setIsPushingProd] = useState(false);
+  const [isPullingProd, setIsPullingProd] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [syncStatus, setSyncStatus] = useState<'idle' | 'pushed' | 'pulled' | 'error'>('idle');
@@ -192,30 +197,142 @@ export function useAppsScriptFiles({
     } finally { setIsPulling(false); }
   }, [projectId, callTool, loadFiles, selectedFile, handleFileSelect]);
 
-  const handleDeployDevVersion = useCallback(async () => {
+  // Push local changes to the existing DEV environment
+  const handlePushToDev = useCallback(async () => {
+    if (!devScriptId) {
+      setError('No DEV environment configured. DEV script ID is required.');
+      return;
+    }
+    if (!confirm('Push local changes to DEV environment?\n\nThis will update the DEV script with your current local files.')) return;
+    
     setIsDeploying(true);
     setError(null);
     try {
-      if (!files || files.length === 0) throw new Error('No files to deploy');
+      if (!files || files.length === 0) throw new Error('No files to push');
+      
+      // Prepare files for pushing
       const scriptFiles = files.map(f => {
         let type = f.type;
         if (type === 'gs' || type === 'server_js') type = 'SERVER_JS';
         if (type === 'html') type = 'HTML';
         if (type === 'json') type = 'JSON';
         const name = f.name.replace(/\.(gs|html|json)$/, '');
-        return { name, type: type.toUpperCase(), source: f.source || '' };
+        return { name, type: type.toUpperCase(), source: f.source || fileContent };
       });
-      const devTitle = `[DEV] ${projectName || 'Untitled'} - ${new Date().toLocaleString()}`;
-      const result = await createSpreadsheetWithScript(devTitle, `${devTitle} Script`, scriptFiles);
-      if (result) {
-        if (result.scriptError) alert(`Spreadsheet created but script creation had issues: ${result.scriptError}`);
-        else if (confirm(`✅ Successfully created Dev Version!\n\nDo you want to open the new spreadsheet?`)) window.open(result.spreadsheetUrl, '_blank');
-      } else throw new Error('Failed to create dev version');
+      
+      console.log('⬆️ Pushing to DEV script:', devScriptId);
+      const result = await callTool('apps_script_push_to_dev', { 
+        devProjectId: devScriptId, 
+        files: scriptFiles 
+      });
+      
+      if (result && !result.error) {
+        setSyncStatus('pushed');
+        setTimeout(() => setSyncStatus('idle'), 3000);
+        alert('✅ Successfully pushed to DEV environment!');
+      } else {
+        throw new Error(result?.error || 'Failed to push to DEV');
+      }
     } catch (err) {
-      console.error('Error deploying dev version:', err);
-      setError(err instanceof Error ? err.message : 'Error deploying dev version');
+      console.error('Error pushing to DEV:', err);
+      setError(err instanceof Error ? err.message : 'Error pushing to DEV');
     } finally { setIsDeploying(false); }
-  }, [files, projectName, createSpreadsheetWithScript]);
+  }, [files, fileContent, devScriptId, callTool]);
+
+  // Pull DEV code to local workspace
+  const handlePullFromDev = useCallback(async () => {
+    if (!devScriptId) {
+      setError('No DEV environment configured. DEV script ID is required.');
+      return;
+    }
+    if (!confirm('Pull DEV code to local workspace?\n\nThis will overwrite your local files with the DEV environment code.')) return;
+    
+    setIsPullingDev(true);
+    setError(null);
+    try {
+      console.log('⬇️ Pulling from DEV script:', devScriptId);
+      const result = await callTool('apps_script_pull_from_dev', { 
+        devProjectId: devScriptId 
+      });
+      
+      if (result && !result.error) {
+        setSyncStatus('pulled');
+        setTimeout(() => setSyncStatus('idle'), 3000);
+        await loadFiles();
+        if (selectedFile) await handleFileSelect(selectedFile);
+      } else {
+        throw new Error(result?.error || 'Failed to pull from DEV');
+      }
+    } catch (err) {
+      console.error('Error pulling from DEV:', err);
+      setError(err instanceof Error ? err.message : 'Error pulling from DEV');
+    } finally { setIsPullingDev(false); }
+  }, [devScriptId, callTool, loadFiles, selectedFile, handleFileSelect]);
+
+  // Push DEV code to PRODUCTION
+  const handlePushDevToProd = useCallback(async () => {
+    if (!devScriptId) {
+      setError('No DEV environment configured. DEV script ID is required.');
+      return;
+    }
+    if (!confirm('⚠️ PRODUCTION DEPLOYMENT\n\nPush DEV code to PRODUCTION?\n\nThis will update the production script and create a new version.')) return;
+    
+    setIsPushingProd(true);
+    setError(null);
+    try {
+      console.log('🚀 Pushing DEV to PROD:', { dev: devScriptId, prod: projectId });
+      const result = await callTool('apps_script_push_dev_to_prod', { 
+        devProjectId: devScriptId,
+        prodProjectId: projectId,
+        createVersion: true
+      });
+      
+      if (result && !result.error) {
+        setSyncStatus('pushed');
+        setTimeout(() => setSyncStatus('idle'), 3000);
+        // Extract version number if available
+        if (result.version) {
+          setLastPushedVersion(result.version);
+        }
+        alert('✅ Successfully deployed to PRODUCTION!');
+      } else {
+        throw new Error(result?.error || 'Failed to push to PRODUCTION');
+      }
+    } catch (err) {
+      console.error('Error pushing to PRODUCTION:', err);
+      setError(err instanceof Error ? err.message : 'Error pushing to PRODUCTION');
+    } finally { setIsPushingProd(false); }
+  }, [devScriptId, projectId, callTool]);
+
+  // Pull PROD code to DEV
+  const handlePullFromProd = useCallback(async () => {
+    if (!devScriptId) {
+      setError('No DEV environment configured. DEV script ID is required.');
+      return;
+    }
+    if (!confirm('Pull PRODUCTION code to DEV?\n\nThis will overwrite DEV with the current PRODUCTION code.')) return;
+    
+    setIsPullingProd(true);
+    setError(null);
+    try {
+      console.log('⬇️ Pulling PROD to DEV:', { prod: projectId, dev: devScriptId });
+      const result = await callTool('apps_script_pull_prod_to_dev', { 
+        prodProjectId: projectId,
+        devProjectId: devScriptId
+      });
+      
+      if (result && !result.error) {
+        setSyncStatus('pulled');
+        setTimeout(() => setSyncStatus('idle'), 3000);
+        alert('✅ Successfully synced DEV with PRODUCTION!');
+      } else {
+        throw new Error(result?.error || 'Failed to pull from PRODUCTION');
+      }
+    } catch (err) {
+      console.error('Error pulling from PRODUCTION:', err);
+      setError(err instanceof Error ? err.message : 'Error pulling from PRODUCTION');
+    } finally { setIsPullingProd(false); }
+  }, [devScriptId, projectId, callTool]);
 
   const handleRestoreVersion = useCallback(async (version: number, versionFiles: ScriptFile[]) => {
     if (!confirm(`Are you sure you want to restore version ${version} to your local workspace?`)) return;
@@ -253,6 +370,9 @@ export function useAppsScriptFiles({
     isPushing,
     isPulling,
     isDeploying,
+    isPullingDev,
+    isPushingProd,
+    isPullingProd,
     error,
     setError,
     saveStatus,
@@ -265,7 +385,11 @@ export function useAppsScriptFiles({
     handleSave,
     handlePushToGoogle,
     handlePullFromGoogle,
-    handleDeployDevVersion,
+    handlePushToDev,
+    handlePullFromDev,
+    handlePushDevToProd,
+    handlePullFromProd,
+    hasDevEnvironment: !!devScriptId,
     handleRestoreVersion
   };
 }

@@ -32,7 +32,19 @@ export interface Message {
 interface ChatAreaProps {
   tabId: string;
   conversationId?: string;
-  onOpenProject?: (projectId: string, projectName: string, serverKey: string, serviceName: string) => void;
+  onOpenProject?: (
+    projectId: string, 
+    projectName: string, 
+    serverKey: string, 
+    serviceName: string,
+    devEnvironment?: {
+      devScriptId?: string;
+      devSpreadsheetId?: string;
+      devSpreadsheetUrl?: string;
+      prodSpreadsheetId?: string;
+      prodSpreadsheetUrl?: string;
+    }
+  ) => void;
   onConversationChange?: (conversationId: string | undefined) => void;
 }
 
@@ -397,6 +409,13 @@ export default function ChatArea({ tabId, conversationId: initialConversationId,
     if (onOpenProject && selectedServer && appsScriptServiceName) {
       let projectId = '';
       let projectName = '';
+      let devEnvironment: {
+        devScriptId?: string;
+        devSpreadsheetId?: string;
+        devSpreadsheetUrl?: string;
+        prodSpreadsheetId?: string;
+        prodSpreadsheetUrl?: string;
+      } | undefined;
       
       if (typeof project === 'string') {
         // Try to extract ID from format "Name [ID]"
@@ -411,6 +430,18 @@ export default function ChatArea({ tabId, conversationId: initialConversationId,
       } else {
         projectId = project.id || project.scriptId;
         projectName = project.name || project.title;
+        
+        // Extract DEV environment info from project object (sent by MCP server)
+        if (project.devScriptId || project.devSpreadsheetId) {
+          devEnvironment = {
+            devScriptId: project.devScriptId,
+            devSpreadsheetId: project.devSpreadsheetId,
+            devSpreadsheetUrl: project.devSpreadsheetUrl,
+            prodSpreadsheetId: project.spreadsheetId,
+            prodSpreadsheetUrl: project.spreadsheetUrl,
+          };
+          console.log('📦 Project has DEV environment:', devEnvironment);
+        }
       }
       
       if (projectId) {
@@ -428,7 +459,7 @@ export default function ChatArea({ tabId, conversationId: initialConversationId,
           console.warn('⚠️ Failed to create conversation, project will create its own:', err);
         }
         
-        onOpenProject(projectId, projectName, selectedServer, appsScriptServiceName);
+        onOpenProject(projectId, projectName, selectedServer, appsScriptServiceName, devEnvironment);
         return;
       }
     }
@@ -1339,7 +1370,7 @@ Be proactive and helpful in interpreting user intent. If a command is ambiguous,
               messages={messages} 
               isTyping={isTyping} 
               messagesEndRef={messagesEndRef}
-              onOpenProject={onOpenProject ? (id, name) => handleProjectClick({ id, name }) : undefined}
+              onOpenProject={onOpenProject ? handleProjectClick : undefined}
             />
 
             {/* Input Area */}

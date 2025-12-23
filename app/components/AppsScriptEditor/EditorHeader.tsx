@@ -38,7 +38,14 @@ interface EditorHeaderProps {
   syncStatus: string;
   lastPushedVersion: number | null;
   isDeploying: boolean;
-  onDeployDevVersion: () => void;
+  isPullingDev: boolean;
+  isPushingProd: boolean;
+  isPullingProd: boolean;
+  onPushToDev: () => void;
+  onPullFromDev: () => void;
+  onPushDevToProd: () => void;
+  onPullFromProd: () => void;
+  hasDevEnvironment: boolean;
   isRunning: boolean;
   onOpenRunDialog: () => void;
   isLoadingFiles: boolean;
@@ -70,7 +77,14 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
   syncStatus,
   lastPushedVersion,
   isDeploying,
-  onDeployDevVersion,
+  isPullingDev,
+  isPushingProd,
+  isPullingProd,
+  onPushToDev,
+  onPullFromDev,
+  onPushDevToProd,
+  onPullFromProd,
+  hasDevEnvironment,
   isRunning,
   onOpenRunDialog,
   isLoadingFiles,
@@ -132,22 +146,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
                   <ExternalLink className="w-3 h-3" />
                 </a>
               )}
-              {/* Prod Spreadsheet Button */}
-              {(prodSpreadsheetUrl || (spreadsheetContext.spreadsheetId && !spreadsheetContext.isLoading)) && (
-                <a 
-                  href={prodSpreadsheetUrl || spreadsheetContext.spreadsheetUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300 transition-colors px-2 py-0.5 bg-purple-900/30 rounded"
-                  title={`Open ${spreadsheetContext.spreadsheetName || 'Production Spreadsheet'}`}
-                >
-                  <Table2 className="w-3 h-3" />
-                  <span className="max-w-[100px] truncate">
-                    {devScriptId ? 'Prod' : (spreadsheetContext.spreadsheetName || 'Spreadsheet')}
-                  </span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              )}
+              {/* prod should not be visible to the user */}
               {spreadsheetContext.isLoading && (
                 <span className="flex items-center gap-1 text-xs text-zinc-500">
                   <Loader2 className="w-3 h-3 animate-spin" />
@@ -192,34 +191,79 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
           
           <div className="w-px h-5 bg-zinc-700 mx-1" />
 
-          {/* Google Sync Buttons */}
-          <button
-            onClick={onPushToGoogle}
-            disabled={isPushing || isPulling}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-green-600 hover:bg-green-500 text-white text-xs font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Push and create version"
-          >
-            {isPushing ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Upload className="w-3.5 h-3.5" />
-            )}
-            Push
-          </button>
-          
-          <button
-            onClick={onPullFromGoogle}
-            disabled={isPushing || isPulling}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Pull latest from Google Apps Script"
-          >
-            {isPulling ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Download className="w-3.5 h-3.5" />
-            )}
-            Pull
-          </button>
+          {/* DEV/PROD Workflow Buttons */}
+          {hasDevEnvironment ? (
+            <>
+              {/* Push to DEV */}
+              <button
+                onClick={onPushToDev}
+                disabled={isDeploying || isPullingDev || isPushingProd || isPullingProd}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Push local changes to DEV environment"
+              >
+                {isDeploying ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Upload className="w-3.5 h-3.5" />
+                )}
+                Push DEV
+              </button>
+              
+              {/* Pull from DEV */}
+              <button
+                onClick={onPullFromDev}
+                disabled={isDeploying || isPullingDev || isPushingProd || isPullingProd}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-700 hover:bg-amber-600 text-white text-xs font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Pull DEV code to local workspace"
+              >
+                {isPullingDev ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Download className="w-3.5 h-3.5" />
+                )}
+                Pull DEV
+              </button>
+              
+              {/* Push DEV to PROD */}
+              <button
+                onClick={onPushDevToProd}
+                disabled={isDeploying || isPullingDev || isPushingProd || isPullingProd}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="⚠️ Deploy DEV code to PRODUCTION"
+              >
+                {isPushingProd ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Upload className="w-3.5 h-3.5" />
+                )}
+                Push PROD
+              </button>
+              
+              {/* Pull PROD to DEV */}
+              <button
+                onClick={onPullFromProd}
+                disabled={isDeploying || isPullingDev || isPushingProd || isPullingProd}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-700 hover:bg-purple-600 text-white text-xs font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Sync DEV with PRODUCTION code"
+              >
+                {isPullingProd ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Download className="w-3.5 h-3.5" />
+                )}
+                Pull PROD
+              </button>
+            </>
+          ) : (
+            <button
+              disabled
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-700 text-zinc-500 text-xs font-medium rounded cursor-not-allowed"
+              title="No DEV environment configured - set up in EGDesk app"
+            >
+              <Cloud className="w-3.5 h-3.5" />
+              No DEV
+            </button>
+          )}
 
           {syncStatus === 'pushed' && (
             <div className="flex items-center gap-1 text-green-400 text-xs animate-in fade-in">
@@ -233,25 +277,6 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
               Pulled!
             </div>
           )}
-
-          <button
-            onClick={onDeployDevVersion}
-            disabled={isDeploying || isPushing || isPulling}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Deploy Dev Version"
-          >
-            {isDeploying ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Deploying...
-              </>
-            ) : (
-              <>
-                <Cloud className="w-3.5 h-3.5" />
-                Deploy Dev
-              </>
-            )}
-          </button>
 
           <div className="w-px h-5 bg-zinc-700 mx-1" />
 

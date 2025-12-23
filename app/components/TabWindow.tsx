@@ -32,7 +32,19 @@ interface TabWindowProps {
   onTabSwitch: (id: string) => void;
   onTabClose: (id: string) => void;
   onNewTab: () => void;
-  onOpenProject: (projectId: string, projectName: string, serverKey: string, serviceName: string) => void;
+  onOpenProject: (
+    projectId: string, 
+    projectName: string, 
+    serverKey: string, 
+    serviceName: string,
+    devEnvironment?: {
+      devScriptId?: string;
+      devSpreadsheetId?: string;
+      devSpreadsheetUrl?: string;
+      prodSpreadsheetId?: string;
+      prodSpreadsheetUrl?: string;
+    }
+  ) => void;
   onTabConversationChange?: (tabId: string, conversationId: string | undefined) => void;
 }
 

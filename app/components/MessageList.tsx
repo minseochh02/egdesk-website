@@ -8,32 +8,14 @@ interface MessageListProps {
   messages: Message[];
   isTyping: boolean;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
-  onOpenProject?: (projectId: string, projectName: string) => void;
+  onOpenProject?: (project: any) => void;  // Pass full project object to preserve dev environment info
 }
 
 export default function MessageList({ messages, isTyping, messagesEndRef, onOpenProject }: MessageListProps) {
   const handleProjectClick = (project: any) => {
     if (onOpenProject) {
-      let projectId = '';
-      let projectName = '';
-      
-      if (typeof project === 'string') {
-        const match = project.match(/^(.*?) \[([a-zA-Z0-9_-]+)\]$/);
-        if (match) {
-          projectName = match[1];
-          projectId = match[2];
-        } else {
-          projectName = project;
-          projectId = project;
-        }
-      } else {
-        projectId = project.id || project.scriptId;
-        projectName = project.name || project.title;
-      }
-      
-      if (projectId) {
-        onOpenProject(projectId, projectName);
-      }
+      // Pass the full project object to preserve devScriptId, devSpreadsheetId, etc.
+      onOpenProject(project);
     }
   };
 
