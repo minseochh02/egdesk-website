@@ -17,6 +17,12 @@ export interface Tab {
     serverKey?: string;
     serviceName?: string;
     conversationId?: string;
+    // DEV environment (Local → DEV → PROD workflow)
+    devScriptId?: string;
+    devSpreadsheetId?: string;
+    devSpreadsheetUrl?: string;
+    prodSpreadsheetId?: string;
+    prodSpreadsheetUrl?: string;
   };
 }
 
@@ -127,6 +133,11 @@ export default function TabWindow({
                 projectName={tab.data.projectName}
                 serverKey={tab.data.serverKey!}
                 serviceName={tab.data.serviceName}
+                devScriptId={tab.data.devScriptId}
+                devSpreadsheetId={tab.data.devSpreadsheetId}
+                devSpreadsheetUrl={tab.data.devSpreadsheetUrl}
+                prodSpreadsheetId={tab.data.prodSpreadsheetId}
+                prodSpreadsheetUrl={tab.data.prodSpreadsheetUrl}
                 onConversationChange={(conversationId) => onTabConversationChange?.(tab.id, conversationId)}
               />
             ) : (

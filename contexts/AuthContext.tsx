@@ -60,6 +60,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
+        scopes: [
+          'https://www.googleapis.com/auth/spreadsheets',
+          'https://www.googleapis.com/auth/drive.file',
+          'https://www.googleapis.com/auth/script.projects',
+          'https://www.googleapis.com/auth/script.deployments',
+        ].join(' '),
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
       },
     });
     if (error) {

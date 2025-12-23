@@ -1,107 +1,94 @@
-// egdesk-website/hooks/useGoogleSheets.ts
-
 import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface CreateSpreadsheetResult {
-  success: boolean;
-  spreadsheetId?: string;
-  spreadsheetUrl?: string;
-  error?: string;
-}
-
-interface CreateSpreadsheetWithScriptResult extends CreateSpreadsheetResult {
+  spreadsheetId: string;
+  spreadsheetUrl: string;
   scriptId?: string;
+  scriptUrl?: string;
+  scriptError?: string;
 }
 
 export function useGoogleSheets() {
-  const { session } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const callApi = async <T>(endpoint: string, method: string, body?: any): Promise<T> => {
-    if (!session?.access_token) {
-      throw new Error('Not authenticated');
-    }
-
+  const createSpreadsheet = async (title: string): Promise<CreateSpreadsheetResult | null> => {
+    setLoading(true);
     setError(null);
-
     try {
-      const response = await fetch(endpoint, {
-        method,
+      const response = await fetch('/api/google/spreadsheets', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Pass Supabase access token, which will be used to verify user in API route
-          'Authorization': `Bearer ${session.access_token}`,
         },
-        body: body ? JSON.stringify(body) : undefined,
+        body: JSON.stringify({ title }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
+        throw new Error(data.error || 'Failed to create spreadsheet');
       }
 
-      return data as T;
-    } catch (err: any) {
-      console.error(`API call to ${endpoint} failed:`, err);
-      setError(err.message || 'An unknown error occurred');
-      throw err;
-    }
-  };
-
-  const createSpreadsheet = async (
-    title: string
-  ): Promise<CreateSpreadsheetResult> => {
-    setLoading(true);
-    try {
-      const result = await callApi<CreateSpreadsheetResult>('/api/google/spreadsheets', 'POST', { title });
-      return result;
+      return {
+        spreadsheetId: data.spreadsheetId,
+        spreadsheetUrl: data.spreadsheetUrl,
+      };
     } catch (err) {
-      return { success: false, error: error || 'Failed to create spreadsheet' };
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      setError(msg);
+      return null;
     } finally {
       setLoading(false);
     }
   };
 
   const createSpreadsheetWithScript = async (
-    spreadsheetTitle: string,
+    title: string, 
     scriptTitle?: string,
-    initialScriptContent?: string
-  ): Promise<CreateSpreadsheetWithScriptResult> => {
+    initialFiles?: any[]
+  ): Promise<CreateSpreadsheetResult | null> => {
     setLoading(true);
+    setError(null);
     try {
-      const result = await callApi<CreateSpreadsheetWithScriptResult>(
-        '/api/google/spreadsheet-with-script',
-        'POST',
-        {
-          spreadsheetTitle,
+      const response = await fetch('/api/google/spreadsheet-with-script', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          title, 
           scriptTitle,
-          initialScriptContent,
-        }
-      );
-      return result;
+          initialFiles
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create spreadsheet with script');
+      }
+
+      return {
+        spreadsheetId: data.spreadsheetId,
+        spreadsheetUrl: data.spreadsheetUrl,
+        scriptId: data.scriptId,
+        scriptUrl: data.scriptUrl,
+        scriptError: data.scriptError,
+      };
     } catch (err) {
-      return { success: false, error: error || 'Failed to create spreadsheet with script' };
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      setError(msg);
+      return null;
     } finally {
       setLoading(false);
     }
   };
 
-  // This function would be for direct Google API calls, not via MCP tunnel
-  // For now, we will rely on MCP tools for reading existing spreadsheets
-  const getSpreadsheet = async (spreadsheetId: string) => {
-    console.warn('getSpreadsheet not implemented for direct Google API access yet. Use MCP tools for reading.');
-    return { success: false, error: 'Not implemented' };
-  };
-
-  return {
-    createSpreadsheet,
-    createSpreadsheetWithScript,
-    getSpreadsheet,
-    loading,
-    error,
+  return { 
+    createSpreadsheet, 
+    createSpreadsheetWithScript, 
+    loading, 
+    error 
   };
 }
-
