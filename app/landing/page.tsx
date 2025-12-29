@@ -44,10 +44,16 @@ export default function LandingPage() {
               Powerful AI Server
             </span>
           </h1>
-          <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto">
+          <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
             EGDesk is a revolutionary two-part system that converts your computer into 
             both an MCP server and local LLM server, accessible anywhere with your Google account.
           </p>
+          <div className="inline-flex items-center gap-2 px-6 py-3 bg-green-500/20 border border-green-400/50 rounded-full mb-12">
+            <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <span className="text-green-300 font-semibold">100% Private - All data stays on your local PC</span>
+          </div>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a 
               href="https://github.com/minseochh02/egdesk-scratch/releases"
@@ -106,7 +112,7 @@ export default function LandingPage() {
                   <svg className="w-6 h-6 text-green-400 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
-                  <span><strong className="text-white">Secure Connection</strong> - OAuth-based authentication</span>
+                  <span><strong className="text-white">Complete Privacy</strong> - All data stored locally on your PC, never in our database</span>
                 </li>
               </ul>
               <div className="mt-6">
@@ -198,8 +204,8 @@ export default function LandingPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">Secure & Private</h3>
-              <p className="text-gray-300">Your data stays on your machine with OAuth security</p>
+              <h3 className="text-xl font-bold text-white mb-2">100% Private</h3>
+              <p className="text-gray-300">All data is stored on your local PC, not in EGDesk's database</p>
             </div>
 
             <div className="text-center">
@@ -210,6 +216,49 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-bold text-white mb-2">Access Anywhere</h3>
               <p className="text-gray-300">Connect from any device with internet access</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Privacy Guarantee Section */}
+      <section className="py-20 px-6 bg-gradient-to-r from-green-900/20 to-blue-900/20">
+        <div className="container mx-auto max-w-4xl">
+          <div className="bg-white/5 backdrop-blur-lg rounded-3xl p-12 border border-green-400/30">
+            <div className="flex items-center justify-center mb-6">
+              <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+                <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-4">
+              Your Data, Your Machine
+            </h2>
+            <p className="text-xl text-gray-300 text-center mb-6 leading-relaxed">
+              <strong className="text-white">EGDesk never stores your data.</strong> Everything - your files, conversations, 
+              AI models, and processing - happens entirely on your local PC. We only facilitate the secure 
+              connection between your devices. Your privacy is absolute.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4 text-green-300">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <span>No cloud storage</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <span>No data collection</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <span>100% local processing</span>
+              </div>
             </div>
           </div>
         </div>
@@ -244,9 +293,17 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 px-6 border-t border-white/10">
-        <div className="container mx-auto text-center text-gray-400">
-          <p>&copy; 2025 EGDesk. Transform your PC into a powerful AI server.</p>
+      <footer className="py-12 px-6 border-t border-white/10">
+        <div className="container mx-auto text-center">
+          <p className="text-gray-400 mb-6">&copy; 2025 EGDesk. Transform your PC into a powerful AI server.</p>
+          <div className="flex justify-center space-x-8 text-sm text-gray-500">
+            <Link href="/tos" className="hover:text-white transition-colors">
+              Terms of Service
+            </Link>
+            <Link href="/privacy" className="hover:text-white transition-colors">
+              Privacy Policy
+            </Link>
+          </div>
         </div>
       </footer>
     </div>
