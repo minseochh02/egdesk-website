@@ -67,26 +67,32 @@ export default function TermsOfService() {
               </h2>
               <div className="text-gray-300 space-y-4 pl-11">
                 <p>
-                  EGDesk is a two-part system that transforms your personal computer into:
+                  EGDesk is a system that provides multiple ways to run MCP servers and AI models:
                 </p>
                 <ul className="space-y-2 ml-4">
                   <li className="flex items-start gap-2">
                     <svg className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
-                    <span>An MCP (Model Context Protocol) server for AI integrations</span>
+                    <span><strong className="text-white">Desktop MCP Server</strong> — Run an MCP (Model Context Protocol) server locally on your PC for AI integrations</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <svg className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
-                    <span>A local LLM server running open-source AI models</span>
+                    <span><strong className="text-white">Local LLM Server</strong> — Run open-source AI models directly on your hardware</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <svg className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
-                    <span>A web interface accessible via Google OAuth authentication</span>
+                    <span><strong className="text-white">Google Apps Script MCP</strong> — Create cloud-based MCP servers that run 24/7 and store data in your Google account (Sheets, Drive, Docs)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <svg className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <span><strong className="text-white">Web Interface</strong> — Access all your MCP servers from anywhere via Google OAuth authentication</span>
                   </li>
                 </ul>
                 <p>
@@ -103,9 +109,10 @@ export default function TermsOfService() {
               </h2>
               <div className="text-gray-300 space-y-4 pl-11">
                 <div className="bg-green-500/10 border border-green-400/30 rounded-xl p-4">
-                  <p className="text-green-300 font-semibold mb-2">🔒 Your Data Stays Local</p>
+                  <p className="text-green-300 font-semibold mb-2">🔒 Your Data, Your Control</p>
                   <p>
-                    EGDesk is designed with privacy as a core principle. All your data, files, conversations, and AI processing occur entirely on your local PC. We do not store, collect, or have access to your personal data.
+                    EGDesk is designed with privacy as a core principle. We do not store your data on our servers. 
+                    All data is stored either on your local PC or in your own Google account — never on EGDesk servers.
                   </p>
                 </div>
                 <p><strong className="text-white">What we DO NOT collect:</strong></p>
@@ -113,13 +120,20 @@ export default function TermsOfService() {
                   <li>• Your files or documents</li>
                   <li>• AI conversations or prompts</li>
                   <li>• LLM outputs or model data</li>
+                  <li>• Data stored in your Google Sheets/Drive via Apps Script MCP</li>
                   <li>• Any content processed through EGDesk</li>
                 </ul>
                 <p><strong className="text-white">What we DO use:</strong></p>
                 <ul className="space-y-1 ml-4 text-gray-400">
                   <li>• Google OAuth for authentication (email for account identification only)</li>
+                  <li>• Google Apps Script permissions to create and manage MCP server code</li>
                   <li>• Connection data to facilitate remote access between your devices</li>
                 </ul>
+                <p><strong className="text-white">Apps Script MCP Data:</strong></p>
+                <p className="ml-4 text-gray-400">
+                  When using Apps Script MCP, data can be stored in <strong className="text-white">both your local PC and your Google account</strong> (Sheets, Drive, Docs, etc.). 
+                  We use Apps Script permissions only to manage the MCP server code — we do not collect or store your data in our database.
+                </p>
               </div>
             </div>
 
@@ -211,31 +225,10 @@ export default function TermsOfService() {
 
                 <p><strong className="text-white">Effect of Termination:</strong></p>
                 <p>
-                  Since all data is stored locally on your PC, account termination only affects your ability to use the web interface for remote access. Your local data and desktop application functionality remain unaffected.
+                  Since your data is stored on your local PC and/or your own Google account, account termination 
+                  only affects your ability to use the EGDesk web interface and Apps Script MCP management features. 
+                  Your local data, desktop application functionality, and data in your Google account remain unaffected.
                 </p>
-
-                <p className="mt-4"><strong className="text-white">Voluntary Account Deletion:</strong></p>
-                <p>
-                  You may delete your account at any time through the account settings page. When you delete your account:
-                </p>
-                <ul className="space-y-2 ml-4 mt-2">
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-400">•</span>
-                    <span>Your registered MCP servers will be automatically delisted from our directory</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-400">•</span>
-                    <span>All remote access permissions will be revoked</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-400">•</span>
-                    <span>Your account information (email, profile) will be permanently deleted within 30 days</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-400">•</span>
-                    <span>Your local data and desktop application will continue to work offline</span>
-                  </li>
-                </ul>
               </div>
             </div>
 
@@ -251,6 +244,20 @@ export default function TermsOfService() {
                   EGDesk uses Google OAuth for authentication. By using our Service, you also agree to Google's Terms of Service and Privacy Policy. We only access your basic profile information (email) for account identification.
                 </p>
                 
+                <p><strong className="text-white">Google Apps Script:</strong></p>
+                <p>
+                  EGDesk uses Google Apps Script to create and run MCP servers. When using this feature:
+                </p>
+                <ul className="space-y-1 ml-4 text-gray-400">
+                  <li>• MCP server <strong className="text-white">code</strong> runs on Google's Apps Script infrastructure</li>
+                  <li>• MCP server <strong className="text-white">data</strong> can be stored on your PC and/or your Google account (Sheets, Drive, etc.)</li>
+                  <li>• Data in your Google account is governed by Google's Terms of Service</li>
+                  <li>• We use Apps Script permissions to create, deploy, and manage MCP server code</li>
+                  <li>• AI can modify your MCP server code based on your instructions</li>
+                  <li>• EGDesk does not collect or store your data — it stays in your PC or Google account</li>
+                  <li>• Google Apps Script usage is subject to Google's quotas and limitations</li>
+                </ul>
+
                 <p><strong className="text-white">Open Source LLMs:</strong></p>
                 <p>
                   EGDesk supports various open-source large language models. Each model may have its own license terms. You are responsible for complying with the respective licenses of any AI models you choose to run locally.
@@ -279,16 +286,93 @@ export default function TermsOfService() {
 
                 <p><strong className="text-white">We are NOT liable for:</strong></p>
                 <ul className="space-y-1 ml-4 text-gray-400">
-                  <li>• Data loss on your local machine (all data is stored locally by you)</li>
+                  <li>• Data loss on your local machine</li>
+                  <li>• Data loss or issues in your Google account when using Apps Script MCP</li>
                   <li>• Interruptions in service availability</li>
                   <li>• Actions of third-party AI models</li>
+                  <li>• Google Apps Script quotas, limitations, or service interruptions</li>
                   <li>• Any damages resulting from your use of the Service</li>
-                  <li>• Security breaches on your local machine</li>
+                  <li>• Security breaches on your local machine or Google account</li>
                 </ul>
 
                 <p><strong className="text-white">Support:</strong></p>
                 <p>
                   While we do not handle your data, we are committed to helping users with technical issues. If you encounter problems, please contact us and we will provide support to the best of our ability.
+                </p>
+              </div>
+            </div>
+
+            {/* OAuth Permissions */}
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-3">
+                <span className="w-8 h-8 bg-gradient-to-br from-orange-500 to-amber-500 rounded-lg flex items-center justify-center text-sm">7</span>
+                Google OAuth Permissions
+              </h2>
+              <div className="text-gray-300 space-y-4 pl-11">
+                <p>
+                  EGDesk requests specific Google permissions to enable its features. Below is a complete list of permissions and their purposes:
+                </p>
+
+                <div className="space-y-4">
+                  <div className="bg-green-500/10 border border-green-400/30 rounded-xl p-4">
+                    <h4 className="text-green-300 font-semibold mb-3">Basic Permissions</h4>
+                    <ul className="space-y-2 text-sm">
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-400">•</span>
+                        <span><strong className="text-white">Email Address</strong> — Identify your account for authentication</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-400">•</span>
+                        <span><strong className="text-white">Drive File Access</strong> — Access only files created by EGDesk (not your entire Drive)</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-400">•</span>
+                        <span><strong className="text-white">Script Metrics</strong> — Monitor MCP server performance</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-green-400">•</span>
+                        <span><strong className="text-white">Script Storage</strong> — Store MCP configuration and settings</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-yellow-500/10 border border-yellow-400/30 rounded-xl p-4">
+                    <h4 className="text-yellow-300 font-semibold mb-3">Apps Script Permissions</h4>
+                    <p className="text-sm text-gray-400 mb-3">Required for creating and managing MCP servers:</p>
+                    <ul className="space-y-2 text-sm">
+                      <li className="flex items-start gap-2">
+                        <span className="text-yellow-400">•</span>
+                        <span><strong className="text-white">Create/Update Projects</strong> — AI creates and modifies MCP server code</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-yellow-400">•</span>
+                        <span><strong className="text-white">Deployments</strong> — Deploy MCP servers as web applications</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-yellow-400">•</span>
+                        <span><strong className="text-white">External Requests</strong> — Allow MCP servers to connect to external APIs</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-yellow-400">•</span>
+                        <span><strong className="text-white">Send Email</strong> — Send notifications from your MCP servers</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-red-500/10 border border-red-400/30 rounded-xl p-4">
+                    <h4 className="text-red-300 font-semibold mb-3">Advanced Permission</h4>
+                    <ul className="space-y-2 text-sm">
+                      <li className="flex items-start gap-2">
+                        <span className="text-red-400">•</span>
+                        <span><strong className="text-white">Modify Scripts</strong> — Allows AI to edit and fix your MCP server code based on your instructions. This is a core feature that enables AI-assisted code customization.</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <p className="text-sm text-gray-400 mt-4">
+                  <strong className="text-white">Note:</strong> You can revoke these permissions at any time through your 
+                  <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 ml-1">Google Account Settings</a>.
                 </p>
               </div>
             </div>

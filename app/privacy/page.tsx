@@ -50,7 +50,7 @@ export default function PrivacyPolicy() {
             <div>
               <h2 className="text-xl font-bold text-white mb-1">Privacy-First by Design</h2>
               <p className="text-green-200">
-                EGDesk is built so that your data never leaves your computer. We can't see it, we don't store it, and we don't want it.
+                Your data stays on your computer or in your own Google account. We request permissions only to help AI create and manage your MCP servers — we never collect or store your data in our database.
               </p>
             </div>
           </div>
@@ -73,7 +73,7 @@ export default function PrivacyPolicy() {
                   This Privacy Policy explains how QUUS ("Company," "we," "us," or "our") handles information when you use the EGDesk desktop application and web interface (the "Service").
                 </p>
                 <p>
-                  EGDesk is designed with a fundamentally different approach to privacy: <strong className="text-white">your data stays on your device</strong>. Unlike traditional cloud services, we don't have access to your files, conversations, or AI interactions.
+                  EGDesk is designed with a fundamentally different approach to privacy: <strong className="text-white">your data stays on your device or in your own Google account</strong>. Unlike traditional cloud services, we do not collect or store your files, conversations, or AI interactions in our database. We request Google permissions only to enable AI-assisted MCP server creation and management within your own account.
                 </p>
               </div>
             </div>
@@ -102,10 +102,10 @@ export default function PrivacyPolicy() {
                       <svg className="w-6 h-6 text-green-400" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>
-                      <span className="font-bold text-white">No Cloud Storage</span>
+                      <span className="font-bold text-white">Your Data, Your Storage</span>
                     </div>
                     <p className="text-sm text-gray-400">
-                      Your files and data are stored locally on your machine. We don't maintain any cloud storage of your content.
+                      Data is stored on your PC and/or your Google account — never in our database.
                     </p>
                   </div>
                   <div className="bg-green-500/10 border border-green-400/30 rounded-xl p-5">
@@ -127,7 +127,7 @@ export default function PrivacyPolicy() {
                       <span className="font-bold text-white">You Own Your Data</span>
                     </div>
                     <p className="text-sm text-gray-400">
-                      Since everything is stored locally, you have complete control. Delete it anytime, no questions asked.
+                      Whether local or in Google, you have complete control. Delete it anytime, no questions asked.
                     </p>
                   </div>
                 </div>
@@ -158,7 +158,46 @@ export default function PrivacyPolicy() {
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-3">3.2 Connection Data</h3>
+                  <h3 className="text-lg font-semibold text-white mb-3">3.2 Google Permissions (OAuth Scopes)</h3>
+                  <p className="mb-3">EGDesk requests the following Google permissions to enable its features:</p>
+                  
+                  <div className="space-y-3">
+                    <div className="bg-white/5 border border-white/20 rounded-lg p-3">
+                      <p className="text-white font-medium text-sm mb-2">📁 Drive & Storage</p>
+                      <ul className="space-y-1 text-sm text-gray-400">
+                        <li>• <strong>drive.file</strong> — Access only files created by EGDesk</li>
+                        <li>• <strong>script.storage</strong> — Store MCP configuration data</li>
+                      </ul>
+                    </div>
+
+                    <div className="bg-white/5 border border-white/20 rounded-lg p-3">
+                      <p className="text-white font-medium text-sm mb-2">⚙️ Apps Script Management</p>
+                      <ul className="space-y-1 text-sm text-gray-400">
+                        <li>• <strong>script.projects</strong> — Create/update MCP server projects</li>
+                        <li>• <strong>script.deployments</strong> — Deploy MCP servers</li>
+                        <li>• <strong>script.webapp.deploy</strong> — Publish MCP as web apps</li>
+                        <li>• <strong>script.metrics</strong> — View performance metrics</li>
+                        <li>• <strong>script.external_request</strong> — Connect to external APIs</li>
+                        <li>• <strong>script.send_mail</strong> — Send notification emails</li>
+                      </ul>
+                    </div>
+
+                    <div className="bg-white/5 border border-white/20 rounded-lg p-3">
+                      <p className="text-white font-medium text-sm mb-2">🔧 Advanced (Restricted)</p>
+                      <ul className="space-y-1 text-sm text-gray-400">
+                        <li>• <strong>drive.scripts</strong> — Modify Apps Script code (enables AI-assisted code editing)</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-gray-400 mt-3">
+                    These permissions enable AI to create, customize, and fix your MCP server code. You can revoke access anytime via 
+                    <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 ml-1">Google Account Settings</a>.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-3">3.3 Connection Data</h3>
                   <p className="mb-3">To enable remote access between your devices, we process:</p>
                   <ul className="space-y-2 ml-4">
                     <li className="flex items-start gap-2">
@@ -173,7 +212,7 @@ export default function PrivacyPolicy() {
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-3">3.3 Technical Data</h3>
+                  <h3 className="text-lg font-semibold text-white mb-3">3.4 Technical Data</h3>
                   <p className="mb-3">For service functionality and troubleshooting:</p>
                   <ul className="space-y-2 ml-4">
                     <li className="flex items-start gap-2">
@@ -198,7 +237,7 @@ export default function PrivacyPolicy() {
               </h2>
               <div className="text-gray-300 space-y-4 pl-11">
                 <p className="mb-4">
-                  This is equally important. We have <strong className="text-white">no access</strong> to:
+                  This is equally important. We <strong className="text-white">do not collect or store</strong> the following in our database:
                 </p>
                 <div className="bg-red-500/10 border border-red-400/30 rounded-xl p-5">
                   <ul className="space-y-3">
@@ -206,7 +245,13 @@ export default function PrivacyPolicy() {
                       <svg className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                       </svg>
-                      <span><strong className="text-white">Your files and documents</strong> — Everything stays on your PC</span>
+                      <span><strong className="text-white">Your local files and documents</strong> — Stored on your PC</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <svg className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                      <span><strong className="text-white">Your Google Sheets, Drive, or Docs data</strong> — Stored in your Google account</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <svg className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -224,19 +269,13 @@ export default function PrivacyPolicy() {
                       <svg className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                       </svg>
-                      <span><strong className="text-white">MCP server data</strong> — All tool operations are local</span>
+                      <span><strong className="text-white">MCP server data</strong> — Stored on your PC and/or Google account, never on our servers</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <svg className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                       </svg>
                       <span><strong className="text-white">Browsing history or usage patterns</strong> — We don't track what you do</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <svg className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                      <span><strong className="text-white">Keystrokes or screen content</strong> — No monitoring whatsoever</span>
                     </li>
                   </ul>
                 </div>
@@ -301,6 +340,31 @@ export default function PrivacyPolicy() {
                   </a>
                 </div>
 
+                <div className="bg-white/5 border border-white/20 rounded-xl p-5 mb-4">
+                  <h3 className="text-lg font-semibold text-white mb-2">Google Apps Script</h3>
+                  <p className="text-gray-400 mb-3">
+                    EGDesk uses Google Apps Script to create and run MCP servers. When using this feature:
+                  </p>
+                  <ul className="space-y-2 text-gray-400 text-sm">
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-400">•</span>
+                      <span>MCP server <strong className="text-white">code</strong> runs on Google's infrastructure under your account</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-400">•</span>
+                      <span>MCP <strong className="text-white">data</strong> can be stored on your PC and/or your Google account (Sheets, Drive, etc.)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-400">•</span>
+                      <span>EGDesk <strong className="text-white">does not collect</strong> your data — it remains in your PC or Google account</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-400">•</span>
+                      <span>Data in your Google account is governed by Google's Terms of Service</span>
+                    </li>
+                  </ul>
+                </div>
+
                 <div className="bg-white/5 border border-white/20 rounded-xl p-5">
                   <h3 className="text-lg font-semibold text-white mb-2">Open Source LLMs</h3>
                   <p className="text-gray-400">
@@ -343,7 +407,9 @@ export default function PrivacyPolicy() {
                   </li>
                 </ul>
                 <p className="mt-4">
-                  <strong className="text-white">Your responsibility:</strong> Since data is stored locally, you are responsible for securing your own computer, maintaining backups, and protecting your Google account credentials.
+                  <strong className="text-white">Your responsibility:</strong> You are responsible for securing your own computer, 
+                  maintaining backups, protecting your Google account credentials, and managing permissions for any 
+                  Google resources used by Apps Script MCP servers.
                 </p>
               </div>
             </div>
@@ -360,6 +426,12 @@ export default function PrivacyPolicy() {
                   Your local data is retained as long as you keep it. We have no control over it. Delete files from your PC whenever you want.
                 </p>
                 
+                <p><strong className="text-white">Google Account Data (Apps Script MCP):</strong></p>
+                <p className="ml-4 text-gray-400">
+                  Data stored in your Google account via Apps Script is retained according to your own Google settings. 
+                  We do not collect or store this data. Manage it directly in your Google Drive, Sheets, or Docs.
+                </p>
+
                 <p><strong className="text-white">Account Information:</strong></p>
                 <p className="ml-4 text-gray-400">
                   We retain your email and basic profile information as long as your account is active. If you delete your account, we will remove this information within 30 days.
@@ -406,22 +478,8 @@ export default function PrivacyPolicy() {
                     <span><strong className="text-white">Portability</strong> — Receive your data in a portable format</span>
                   </li>
                 </ul>
-                
-                <div className="bg-blue-500/10 border border-blue-400/30 rounded-xl p-4 mt-4">
-                  <p className="text-blue-300 font-semibold mb-2">✨ Self-Service Account Deletion</p>
-                  <p className="text-gray-300 mb-3">
-                    You can delete your account at any time through your account settings. This will:
-                  </p>
-                  <ul className="space-y-2 text-gray-300 ml-4">
-                    <li>• Immediately delist all your registered MCP servers</li>
-                    <li>• Revoke all remote access permissions</li>
-                    <li>• Schedule your account data for deletion within 30 days</li>
-                    <li>• Maintain your local data (which you can delete manually)</li>
-                  </ul>
-                </div>
-
                 <p className="mt-4">
-                  To exercise these rights or if you need assistance, contact us at <a href="mailto:m8chaa@gmail.com" className="text-blue-400 hover:text-blue-300 underline">m8chaa@gmail.com</a>. We will respond within 30 days.
+                  To exercise these rights, contact us at <a href="mailto:m8chaa@gmail.com" className="text-blue-400 hover:text-blue-300 underline">m8chaa@gmail.com</a>. We will respond within 30 days.
                 </p>
               </div>
             </div>

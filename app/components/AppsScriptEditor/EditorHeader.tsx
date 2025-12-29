@@ -280,8 +280,8 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
 
           <div className="w-px h-5 bg-zinc-700 mx-1" />
 
-          {/* Run & Version Buttons */}
-          <button
+          {/* Run Button - Hidden by request */}
+          {/* <button
             onClick={onOpenRunDialog}
             disabled={isRunning}
             className="flex items-center gap-1.5 px-2.5 py-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs font-medium rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -295,7 +295,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
             Run
           </button>
 
-          <div className="w-px h-5 bg-zinc-700 mx-1" />
+          <div className="w-px h-5 bg-zinc-700 mx-1" /> */}
           
           <button
             onClick={onRefreshFiles}
