@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "EGDesk MCP Client",
-  description: "Connect to remote MCP servers with OAuth authentication",
+  title: "EGDesk - Transform Your PC Into a Powerful AI Server",
+  description: "EGDesk converts your computer into both an MCP server and local LLM server, accessible anywhere with your Google account.",
 };
 
 export default function RootLayout({
