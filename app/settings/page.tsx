@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AlertTriangle, Trash2, ArrowLeft, User, Shield } from 'lucide-react';
 
 export default function SettingsPage() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, deleteAccount } = useAuth();
   const router = useRouter();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -25,39 +25,10 @@ export default function SettingsPage() {
     setDeleteError('');
 
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-      if (!supabaseUrl || !supabaseAnonKey) {
-        throw new Error('Supabase configuration missing');
-      }
-
-      // Get the current session token
-      const { createClient } = await import('@/lib/supabase');
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session) {
-        throw new Error('No active session');
-      }
-
-      // Call the delete-account edge function
-      const response = await fetch(`${supabaseUrl}/functions/v1/delete-account`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.message || 'Failed to delete account');
-      }
+      await deleteAccount();
 
       // Account deleted successfully - sign out and redirect
-      await signOut();
+      // Note: deleteAccount already clears local session state
       router.push('/landing?deleted=true');
     } catch (error) {
       console.error('Error deleting account:', error);
