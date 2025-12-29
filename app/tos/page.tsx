@@ -213,6 +213,29 @@ export default function TermsOfService() {
                 <p>
                   Since all data is stored locally on your PC, account termination only affects your ability to use the web interface for remote access. Your local data and desktop application functionality remain unaffected.
                 </p>
+
+                <p className="mt-4"><strong className="text-white">Voluntary Account Deletion:</strong></p>
+                <p>
+                  You may delete your account at any time through the account settings page. When you delete your account:
+                </p>
+                <ul className="space-y-2 ml-4 mt-2">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-400">•</span>
+                    <span>Your registered MCP servers will be automatically delisted from our directory</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-400">•</span>
+                    <span>All remote access permissions will be revoked</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-400">•</span>
+                    <span>Your account information (email, profile) will be permanently deleted within 30 days</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-400">•</span>
+                    <span>Your local data and desktop application will continue to work offline</span>
+                  </li>
+                </ul>
               </div>
             </div>
 

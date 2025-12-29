@@ -406,8 +406,22 @@ export default function PrivacyPolicy() {
                     <span><strong className="text-white">Portability</strong> — Receive your data in a portable format</span>
                   </li>
                 </ul>
+                
+                <div className="bg-blue-500/10 border border-blue-400/30 rounded-xl p-4 mt-4">
+                  <p className="text-blue-300 font-semibold mb-2">✨ Self-Service Account Deletion</p>
+                  <p className="text-gray-300 mb-3">
+                    You can delete your account at any time through your account settings. This will:
+                  </p>
+                  <ul className="space-y-2 text-gray-300 ml-4">
+                    <li>• Immediately delist all your registered MCP servers</li>
+                    <li>• Revoke all remote access permissions</li>
+                    <li>• Schedule your account data for deletion within 30 days</li>
+                    <li>• Maintain your local data (which you can delete manually)</li>
+                  </ul>
+                </div>
+
                 <p className="mt-4">
-                  To exercise these rights, contact us at <a href="mailto:m8chaa@gmail.com" className="text-blue-400 hover:text-blue-300 underline">m8chaa@gmail.com</a>. We will respond within 30 days.
+                  To exercise these rights or if you need assistance, contact us at <a href="mailto:m8chaa@gmail.com" className="text-blue-400 hover:text-blue-300 underline">m8chaa@gmail.com</a>. We will respond within 30 days.
                 </p>
               </div>
             </div>

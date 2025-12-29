@@ -303,6 +303,9 @@ export default function LandingPage() {
             <Link href="/privacy" className="hover:text-white transition-colors">
               Privacy Policy
             </Link>
+            <Link href="/settings" className="hover:text-white transition-colors">
+              Account Settings
+            </Link>
           </div>
         </div>
       </footer>
