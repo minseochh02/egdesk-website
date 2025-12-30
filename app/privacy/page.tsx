@@ -178,7 +178,7 @@ export default function PrivacyPolicy() {
                         <li>• <strong>script.webapp.deploy</strong> — Publish MCP as web apps</li>
                         <li>• <strong>script.metrics</strong> — View performance metrics</li>
                         <li>• <strong>script.external_request</strong> — Connect to external APIs</li>
-                        <li>• <strong>script.send_mail</strong> — Send notification emails</li>
+                        <li>• <strong>gmail.send</strong> — Send notification emails</li>
                       </ul>
                     </div>
 
