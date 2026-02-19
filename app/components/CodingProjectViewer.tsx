@@ -184,7 +184,6 @@ export default function CodingProjectViewer({
             onError={handleIframeError}
             sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-downloads"
             allow="clipboard-read; clipboard-write"
-            credentials="include"
           />
         )}
       </div>
