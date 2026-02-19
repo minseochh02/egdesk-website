@@ -45,9 +45,9 @@ export default function ChatLayout() {
   };
 
   const handleOpenProject = (
-    projectId: string, 
-    projectName: string, 
-    serverKey: string, 
+    projectId: string,
+    projectName: string,
+    serverKey: string,
     serviceName: string,
     devEnvironment?: {
       devScriptId?: string;
@@ -58,7 +58,7 @@ export default function ChatLayout() {
     }
   ) => {
     const newId = `project-${projectId}`;
-    
+
     // Check if tab already exists
     const existingTab = tabs.find(t => t.id === newId);
     if (existingTab) {
@@ -69,10 +69,10 @@ export default function ChatLayout() {
 
     setTabs([
       ...tabs.map(tab => ({ ...tab, active: false })),
-      { 
-        id: newId, 
-        title: projectName || 'Project', 
-        active: true, 
+      {
+        id: newId,
+        title: projectName || 'Project',
+        active: true,
         type: 'apps-script-editor',
         data: {
           projectId,
@@ -85,6 +85,38 @@ export default function ChatLayout() {
           devSpreadsheetUrl: devEnvironment?.devSpreadsheetUrl,
           prodSpreadsheetId: devEnvironment?.prodSpreadsheetId,
           prodSpreadsheetUrl: devEnvironment?.prodSpreadsheetUrl,
+        }
+      }
+    ]);
+    setActiveTab(newId);
+  };
+
+  const handleOpenCodingProject = (
+    codingProjectName: string,
+    codingProjectUrl: string,
+    tunnelId: string
+  ) => {
+    const newId = `coding-${codingProjectName}`;
+
+    // Check if tab already exists
+    const existingTab = tabs.find(t => t.id === newId);
+    if (existingTab) {
+      setActiveTab(newId);
+      setTabs(tabs.map(tab => ({ ...tab, active: tab.id === newId })));
+      return;
+    }
+
+    setTabs([
+      ...tabs.map(tab => ({ ...tab, active: false })),
+      {
+        id: newId,
+        title: codingProjectName,
+        active: true,
+        type: 'coding-project',
+        data: {
+          codingProjectName,
+          codingProjectUrl,
+          tunnelId
         }
       }
     ]);
@@ -198,15 +230,17 @@ export default function ChatLayout() {
   // Show main chat interface if authenticated
   return (
     <div className="flex h-screen w-full overflow-hidden bg-zinc-900">
-      <Sidebar 
-        onNewChat={createNewTab} 
+      <Sidebar
+        onNewChat={createNewTab}
         onSelectConversation={handleSelectConversation}
         activeConversationId={activeConversationId}
         onSignOut={handleSignOut}
         isCollapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        onOpenCodingProject={handleOpenCodingProject}
+        tunnelId={primaryServerKey}
       />
-      <TabWindow 
+      <TabWindow
         tabs={tabs}
         activeTab={activeTab}
         onTabSwitch={switchTab}

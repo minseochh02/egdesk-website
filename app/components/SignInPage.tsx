@@ -9,7 +9,7 @@ export default function SignInPage() {
   const [signingIn, setSigningIn] = useState(false);
   const [provider, setProvider] = useState<'google' | 'github' | null>(null);
 
-  const handleSignIn = async (signInMethod: () => Promise<void>, providerName: 'google' | 'github') => {
+  const handleSignIn = async (signInMethod: (scopes?: string) => Promise<void>, providerName: 'google' | 'github') => {
     setSigningIn(true);
     setProvider(providerName);
     try {

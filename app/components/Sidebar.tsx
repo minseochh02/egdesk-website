@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConversations, Conversation } from '@/hooks/useConversations';
 import { useUserServers } from '@/hooks/useUserServers';
-import { MessageSquare, FileCode, Search, Plus, Cloud, CloudOff, Loader2, RefreshCw, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { useCodingProjects } from '@/hooks/useCodingProjects';
+import { MessageSquare, FileCode, Search, Plus, Cloud, CloudOff, Loader2, RefreshCw, PanelLeftClose, PanelLeft, Monitor, Globe } from 'lucide-react';
 
 interface SidebarProps {
   onNewChat: () => void;
@@ -13,6 +14,8 @@ interface SidebarProps {
   onSignOut?: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  onOpenCodingProject?: (projectName: string, projectUrl: string, tunnelId: string) => void;
+  tunnelId?: string;
 }
 
 // Helper to format relative time
@@ -33,20 +36,27 @@ function formatRelativeTime(dateStr: string): string {
   return date.toLocaleDateString();
 }
 
-export default function Sidebar({ onNewChat, onSelectConversation, activeConversationId, onSignOut, isCollapsed = false, onToggleCollapse }: SidebarProps) {
+export default function Sidebar({ onNewChat, onSelectConversation, activeConversationId, onSignOut, isCollapsed = false, onToggleCollapse, onOpenCodingProject, tunnelId }: SidebarProps) {
   const { user, signOut: authSignOut } = useAuth();
   const { servers } = useUserServers();
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Use the first available server for conversations
   const primaryServerKey = servers[0]?.server_key || '';
-  
+
   const {
     conversations,
     isConnected,
     isLoading,
     listConversations,
   } = useConversations(primaryServerKey);
+
+  // Fetch coding projects
+  const {
+    projects: codingProjects,
+    loading: codingProjectsLoading,
+    error: codingProjectsError
+  } = useCodingProjects(tunnelId || null);
 
   // Load conversations on mount
   useEffect(() => {
@@ -175,6 +185,47 @@ export default function Sidebar({ onNewChat, onSelectConversation, activeConvers
               className="w-full rounded-lg bg-zinc-900 px-4 py-2 pl-10 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-500" />
+          </div>
+        </div>
+      )}
+
+      {/* Coding Projects Section */}
+      {!isCollapsed && tunnelId && codingProjects.length > 0 && (
+        <div className="px-4 py-2 border-b border-zinc-800">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Monitor className="w-4 h-4 text-green-400" />
+              <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                Dev Servers
+              </span>
+            </div>
+            <span className="text-xs text-zinc-600">{codingProjects.length}</span>
+          </div>
+          <div className="space-y-1">
+            {codingProjects.map((project) => (
+              <button
+                key={project.projectName}
+                onClick={() => onOpenCodingProject?.(project.projectName, project.url, tunnelId)}
+                className="group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors hover:bg-zinc-800/50 text-zinc-300"
+              >
+                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                  project.status === 'running' ? 'bg-green-500 animate-pulse' :
+                  project.status === 'error' ? 'bg-red-500' :
+                  'bg-gray-500'
+                }`} />
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-medium truncate block">
+                    {project.projectName}
+                  </span>
+                  <div className="flex items-center gap-2 text-xs text-zinc-500">
+                    <span>localhost:{project.port}</span>
+                    <span>•</span>
+                    <span className="capitalize">{project.status}</span>
+                  </div>
+                </div>
+                <Globe className="w-4 h-4 text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </button>
+            ))}
           </div>
         </div>
       )}

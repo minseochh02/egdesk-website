@@ -2,9 +2,10 @@
 
 import ChatArea from './ChatArea';
 import AppsScriptEditor from './AppsScriptEditor';
-import { MessageSquare, FileCode } from 'lucide-react';
+import CodingProjectViewer from './CodingProjectViewer';
+import { MessageSquare, FileCode, Monitor } from 'lucide-react';
 
-export type TabType = 'chat' | 'apps-script-editor';
+export type TabType = 'chat' | 'apps-script-editor' | 'coding-project';
 
 export interface Tab {
   id: string;
@@ -23,6 +24,10 @@ export interface Tab {
     devSpreadsheetUrl?: string;
     prodSpreadsheetId?: string;
     prodSpreadsheetUrl?: string;
+    // Coding project data
+    codingProjectName?: string;
+    codingProjectUrl?: string;
+    tunnelId?: string;
   };
 }
 
@@ -86,6 +91,8 @@ export default function TabWindow({
               <div className="relative flex items-center gap-2 flex-1 min-w-0">
                 {tab.type === 'apps-script-editor' ? (
                   <FileCode className="w-4 h-4 flex-shrink-0 text-blue-400" />
+                ) : tab.type === 'coding-project' ? (
+                  <Monitor className="w-4 h-4 flex-shrink-0 text-green-400" />
                 ) : (
                   <MessageSquare className="w-4 h-4 flex-shrink-0 text-zinc-400" />
                 )}
@@ -152,9 +159,15 @@ export default function TabWindow({
                 prodSpreadsheetUrl={tab.data.prodSpreadsheetUrl}
                 onConversationChange={(conversationId) => onTabConversationChange?.(tab.id, conversationId)}
               />
+            ) : tab.type === 'coding-project' && tab.data ? (
+              <CodingProjectViewer
+                projectName={tab.data.codingProjectName!}
+                projectUrl={tab.data.codingProjectUrl!}
+                tunnelId={tab.data.tunnelId!}
+              />
             ) : (
-              <ChatArea 
-                tabId={tab.id} 
+              <ChatArea
+                tabId={tab.id}
                 conversationId={tab.data?.conversationId}
                 onOpenProject={onOpenProject}
                 onConversationChange={(conversationId) => onTabConversationChange?.(tab.id, conversationId)}

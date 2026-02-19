@@ -9,7 +9,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: (scopes?: string) => Promise<void>;
   signInWithGithub: () => Promise<void>;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<void>;
@@ -19,7 +19,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
   loading: true,
-  signInWithGoogle: async () => {},
+  signInWithGoogle: async (scopes?: string) => {},
   signInWithGithub: async () => {},
   signOut: async () => {},
   deleteAccount: async () => {},
@@ -58,15 +58,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (scopes?: string) => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
-        scopes: GOOGLE_OAUTH_SCOPES_STRING,
+        scopes: scopes || undefined,
         queryParams: {
           access_type: 'offline',
-          prompt: 'consent',
+          prompt: scopes ? 'consent' : 'select_account',
         },
       },
     });
