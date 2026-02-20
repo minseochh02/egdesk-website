@@ -15,7 +15,6 @@ interface SidebarProps {
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   onOpenCodingProject?: (projectName: string, projectUrl: string, tunnelId: string) => void;
-  tunnelId?: string;
 }
 
 // Helper to format relative time
@@ -36,13 +35,34 @@ function formatRelativeTime(dateStr: string): string {
   return date.toLocaleDateString();
 }
 
-export default function Sidebar({ onNewChat, onSelectConversation, activeConversationId, onSignOut, isCollapsed = false, onToggleCollapse, onOpenCodingProject, tunnelId }: SidebarProps) {
+export default function Sidebar({ onNewChat, onSelectConversation, activeConversationId, onSignOut, isCollapsed = false, onToggleCollapse, onOpenCodingProject }: SidebarProps) {
   const { user, signOut: authSignOut } = useAuth();
   const { servers } = useUserServers();
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedServerForWebsites, setSelectedServerForWebsites] = useState<string>('');
 
   // Use the first available server for conversations
   const primaryServerKey = servers[0]?.server_key || '';
+
+  // Load saved server selection from localStorage
+  useEffect(() => {
+    if (servers.length === 0) return;
+    if (selectedServerForWebsites) return; // Already set
+
+    const saved = localStorage.getItem('selectedServerForWebsites');
+    if (saved && servers.some(s => s.server_key === saved)) {
+      setSelectedServerForWebsites(saved);
+    } else {
+      // Default to first server if no saved selection
+      setSelectedServerForWebsites(servers[0].server_key);
+    }
+  }, [servers, selectedServerForWebsites]);
+
+  // Save selection to localStorage
+  const handleServerSelection = (serverKey: string) => {
+    setSelectedServerForWebsites(serverKey);
+    localStorage.setItem('selectedServerForWebsites', serverKey);
+  };
 
   const {
     conversations,
@@ -51,12 +71,12 @@ export default function Sidebar({ onNewChat, onSelectConversation, activeConvers
     listConversations,
   } = useConversations(primaryServerKey);
 
-  // Fetch coding projects
+  // Fetch coding projects using selected server
   const {
     projects: codingProjects,
     loading: codingProjectsLoading,
     error: codingProjectsError
-  } = useCodingProjects(tunnelId || null);
+  } = useCodingProjects(selectedServerForWebsites || null);
 
   // Load conversations on mount
   useEffect(() => {
@@ -125,42 +145,62 @@ export default function Sidebar({ onNewChat, onSelectConversation, activeConvers
   return (
     <div className={`flex h-full flex-col border-r border-zinc-800 bg-zinc-950 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
       {/* Header */}
-      <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} p-4 border-b border-zinc-800`}>
-        {!isCollapsed && <h1 className="text-xl font-semibold text-white">EGDesk</h1>}
-        <div className="flex items-center gap-2">
-          {/* Connection status - only show when expanded */}
-          {!isCollapsed && (
-            isConnected ? (
-              <span title="Connected">
-                <Cloud className="w-4 h-4 text-green-400" />
-              </span>
-            ) : (
-              <span title="Offline">
-                <CloudOff className="w-4 h-4 text-yellow-400" />
-              </span>
-            )
-          )}
-          {!isCollapsed && (
-            <button
-              onClick={onNewChat}
-              className="rounded-lg p-2 hover:bg-zinc-800 transition-colors"
-              title="New Chat"
-            >
-              <Plus className="w-5 h-5 text-zinc-400" />
-            </button>
-          )}
-          <button
-            onClick={onToggleCollapse}
-            className="rounded-lg p-2 hover:bg-zinc-800 transition-colors"
-            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {isCollapsed ? (
-              <PanelLeft className="w-5 h-5 text-zinc-400" />
-            ) : (
-              <PanelLeftClose className="w-5 h-5 text-zinc-400" />
+      <div className={`flex flex-col ${isCollapsed ? 'items-center' : ''} p-4 border-b border-zinc-800 gap-3`}>
+        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} w-full`}>
+          {!isCollapsed && <h1 className="text-xl font-semibold text-white">EGDesk</h1>}
+          <div className="flex items-center gap-2">
+            {/* Connection status - only show when expanded */}
+            {!isCollapsed && (
+              isConnected ? (
+                <span title="Connected">
+                  <Cloud className="w-4 h-4 text-green-400" />
+                </span>
+              ) : (
+                <span title="Offline">
+                  <CloudOff className="w-4 h-4 text-yellow-400" />
+                </span>
+              )
             )}
-          </button>
+            {!isCollapsed && (
+              <button
+                onClick={onNewChat}
+                className="rounded-lg p-2 hover:bg-zinc-800 transition-colors"
+                title="New Chat"
+              >
+                <Plus className="w-5 h-5 text-zinc-400" />
+              </button>
+            )}
+            <button
+              onClick={onToggleCollapse}
+              className="rounded-lg p-2 hover:bg-zinc-800 transition-colors"
+              title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {isCollapsed ? (
+                <PanelLeft className="w-5 h-5 text-zinc-400" />
+              ) : (
+                <PanelLeftClose className="w-5 h-5 text-zinc-400" />
+              )}
+            </button>
+          </div>
         </div>
+
+        {/* Server Selector for Websites - only show when expanded and multiple servers */}
+        {!isCollapsed && servers.length > 1 && (
+          <div className="w-full">
+            <label className="text-xs text-zinc-500 mb-1 block">Website Server</label>
+            <select
+              value={selectedServerForWebsites}
+              onChange={(e) => handleServerSelection(e.target.value)}
+              className="w-full rounded-lg bg-zinc-900 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500 border border-zinc-800"
+            >
+              {servers.map((server) => (
+                <option key={server.server_key} value={server.server_key}>
+                  {server.server_key}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Search */}
@@ -190,7 +230,7 @@ export default function Sidebar({ onNewChat, onSelectConversation, activeConvers
       )}
 
       {/* Coding Projects Section */}
-      {!isCollapsed && tunnelId && codingProjects.length > 0 && (
+      {!isCollapsed && selectedServerForWebsites && codingProjects.length > 0 && (
         <div className="px-4 py-2 border-b border-zinc-800">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
@@ -205,7 +245,7 @@ export default function Sidebar({ onNewChat, onSelectConversation, activeConvers
             {codingProjects.map((project) => (
               <button
                 key={project.projectName}
-                onClick={() => onOpenCodingProject?.(project.projectName, project.url, tunnelId)}
+                onClick={() => onOpenCodingProject?.(project.projectName, project.url, selectedServerForWebsites)}
                 className="group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors hover:bg-zinc-800/50 text-zinc-300"
               >
                 <div className={`w-2 h-2 rounded-full flex-shrink-0 ${

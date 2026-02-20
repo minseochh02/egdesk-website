@@ -238,7 +238,6 @@ export default function ChatLayout() {
         isCollapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         onOpenCodingProject={handleOpenCodingProject}
-        tunnelId={primaryServerKey}
       />
       <TabWindow
         tabs={tabs}
