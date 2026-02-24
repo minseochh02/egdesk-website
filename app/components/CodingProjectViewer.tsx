@@ -20,9 +20,11 @@ export default function CodingProjectViewer({
   const [error, setError] = useState<string | null>(null);
   const [iframeKey, setIframeKey] = useState(0);
   const [sessionReady, setSessionReady] = useState(false);
+  const [cacheKey, setCacheKey] = useState(Date.now());
 
   // Construct full tunnel URL (no token in URL - uses session cookie)
-  const fullUrl = `https://tunneling-service.onrender.com/t/${tunnelId}/p/${projectName}/`;
+  // Add cache-busting parameter to prevent iframe caching
+  const fullUrl = `https://tunneling-service.onrender.com/t/${tunnelId}/p/${projectName}/?_t=${cacheKey}`;
 
   // Authenticate and create session cookie before loading iframe
   useEffect(() => {
@@ -74,10 +76,11 @@ export default function CodingProjectViewer({
     };
 
     authenticateSession();
-  }, [projectName, tunnelId, session?.access_token, iframeKey]);
+  }, [projectName, tunnelId]); // Removed session?.access_token and iframeKey to prevent re-auth on token refresh
 
   const handleRefresh = () => {
     setIframeKey(prev => prev + 1);
+    setCacheKey(Date.now()); // Force cache bypass with new timestamp
     setLoading(true);
     setError(null);
   };
