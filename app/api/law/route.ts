@@ -4,13 +4,18 @@ const LAW_BASE = 'https://www.law.go.kr/DRF';
 const OC_KEY = process.env.LAW_OC_KEY ?? 'EGDESK';
 
 export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = request.nextUrl;
+  // Debug: return our outbound IP so we can register it on law.go.kr
+  const { searchParams } = request.nextUrl;
+  if (searchParams.get('debug') === 'ip') {
+    const ipResp = await fetch('https://api.ipify.org?format=json').then(r => r.json()).catch(() => ({}));
+    return NextResponse.json({ outboundIp: ipResp.ip });
+  }
 
-    const endpoint = searchParams.get('endpoint');
-    if (!endpoint) {
+  try {
+    if (!searchParams.get('endpoint')) {
       return NextResponse.json({ error: 'endpoint param required' }, { status: 400 });
     }
+    const endpoint = searchParams.get('endpoint')!;
 
     const url = new URL(`${LAW_BASE}/${endpoint}`);
 
@@ -25,8 +30,8 @@ export async function GET(request: NextRequest) {
       signal: AbortSignal.timeout(30_000),
       headers: {
         Accept: 'application/json, text/plain, */*',
-        Referer: 'https://egdesk.cloud',
-        Origin: 'https://egdesk.cloud',
+        Referer: 'https://www.egdesk.cloud',
+        Origin: 'https://www.egdesk.cloud',
       },
     });
 
