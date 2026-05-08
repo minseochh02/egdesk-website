@@ -282,7 +282,7 @@ export default function LandingPage() {
       {/* Privacy Guarantee Section */}
       <section className="py-20 px-6 bg-gradient-to-r from-green-900/20 to-blue-900/20">
         <div className="container mx-auto max-w-4xl">
-          <div className="bg-white/5 backdrop-blur-lg rounded-3xl p-12 border border-green-400/30">
+          <div className="bg-white/5 backdrop-blur-lg rounded-3xl p-6 md:p-12 border border-green-400/30">
             <div className="flex items-center justify-center mb-6">
               <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
                 <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">

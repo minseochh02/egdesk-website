@@ -1306,7 +1306,7 @@ Be proactive and helpful in interpreting user intent. If a command is ambiguous,
                     <ChevronDown className="w-3.5 h-3.5" />
                   </button>
                   {showModelDropdown && (
-                    <div className="absolute right-0 top-full mt-1 w-64 bg-zinc-800 border border-zinc-600 rounded-lg shadow-xl z-50 max-h-72 overflow-y-auto">
+                    <div className="absolute right-0 top-full mt-1 w-[min(16rem,calc(100vw-2rem))] bg-zinc-800 border border-zinc-600 rounded-lg shadow-xl z-50 max-h-72 overflow-y-auto">
                       <div className="p-2 border-b border-zinc-700">
                         <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Gemini Models</p>
                       </div>
@@ -1393,7 +1393,7 @@ Be proactive and helpful in interpreting user intent. If a command is ambiguous,
 
       {/* Right Side Panel - Only show when server is selected */}
       {selectedServer && showFileTree && (
-        <div className="w-80 flex-shrink-0 border-l border-zinc-700">
+        <div className="hidden md:block w-80 flex-shrink-0 border-l border-zinc-700">
           <div className="h-full flex flex-col">
             {/* File System Tree */}
             <div className="flex-shrink-0 border-b border-zinc-700" style={{ height: '400px' }}>

@@ -75,7 +75,7 @@ export const FileList: React.FC<FileListProps> = ({
   isSaving
 }) => {
   return (
-    <div className="w-64 border-r border-zinc-700 flex flex-col bg-zinc-850">
+    <div className="hidden md:flex w-64 border-r border-zinc-700 flex-col bg-zinc-850">
       <div className="p-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider">
         Files {selectedVersion !== null && `(v${selectedVersion})`}
       </div>

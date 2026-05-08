@@ -70,7 +70,7 @@ export default function TabWindow({
           {tabs.map((tab) => (
             <div
               key={tab.id}
-              className={`group relative flex items-center gap-2 px-4 py-2 rounded-t-lg min-w-[120px] max-w-[200px] cursor-pointer transition-all ${
+              className={`group relative flex items-center gap-2 px-3 py-2 rounded-t-lg min-w-[80px] md:min-w-[120px] max-w-[160px] md:max-w-[200px] cursor-pointer transition-all ${
                 tab.id === activeTab
                   ? 'bg-zinc-800 text-white'
                   : 'bg-zinc-900 text-zinc-400 hover:bg-zinc-850 hover:text-zinc-300'

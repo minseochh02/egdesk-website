@@ -230,6 +230,13 @@ export default function ChatLayout() {
   // Show main chat interface if authenticated
   return (
     <div className="flex h-screen w-full overflow-hidden bg-zinc-900">
+      {/* Mobile backdrop overlay */}
+      {!sidebarCollapsed && (
+        <div
+          className="fixed inset-0 z-40 bg-black/60 md:hidden"
+          onClick={() => setSidebarCollapsed(true)}
+        />
+      )}
       <Sidebar
         onNewChat={createNewTab}
         onSelectConversation={handleSelectConversation}
@@ -239,6 +246,20 @@ export default function ChatLayout() {
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         onOpenCodingProject={handleOpenCodingProject}
       />
+      <div className="flex flex-1 flex-col overflow-hidden min-w-0">
+        {/* Mobile header bar with hamburger */}
+        <div className="flex items-center gap-3 px-3 py-2 bg-zinc-900 border-b border-zinc-800 md:hidden">
+          <button
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="rounded-lg p-1.5 hover:bg-zinc-800 transition-colors"
+            title="Toggle sidebar"
+          >
+            <svg className="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <span className="text-sm font-semibold text-white">EGDesk</span>
+        </div>
       <TabWindow
         tabs={tabs}
         activeTab={activeTab}
@@ -248,6 +269,7 @@ export default function ChatLayout() {
         onOpenProject={handleOpenProject}
         onTabConversationChange={handleTabConversationChange}
       />
+      </div>
     </div>
   );
 }

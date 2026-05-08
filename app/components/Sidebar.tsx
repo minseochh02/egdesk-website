@@ -143,7 +143,11 @@ export default function Sidebar({ onNewChat, onSelectConversation, activeConvers
   };
 
   return (
-    <div className={`flex h-full flex-col border-r border-zinc-800 bg-zinc-950 transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
+    <div className={`flex h-full flex-col border-r border-zinc-800 bg-zinc-950 transition-all duration-300
+      ${isCollapsed
+        ? 'hidden md:flex md:w-16'
+        : 'fixed inset-y-0 left-0 z-50 w-72 md:relative md:z-auto md:w-64'
+      }`}>
       {/* Header */}
       <div className={`flex flex-col ${isCollapsed ? 'items-center' : ''} p-4 border-b border-zinc-800 gap-3`}>
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} w-full`}>
