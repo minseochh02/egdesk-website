@@ -28,6 +28,8 @@ export default function CodingProjectViewer({
 
   // Authenticate and create session cookie before loading iframe
   useEffect(() => {
+    console.log('🔄 useEffect triggered - projectName:', projectName, 'tunnelId:', tunnelId);
+
     if (!session?.access_token) {
       setError('Not authenticated');
       setLoading(false);
