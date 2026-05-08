@@ -23,7 +23,11 @@ export async function GET(request: NextRequest) {
 
     const resp = await fetch(url.toString(), {
       signal: AbortSignal.timeout(30_000),
-      headers: { Accept: 'application/json, text/plain, */*' },
+      headers: {
+        Accept: 'application/json, text/plain, */*',
+        Referer: 'https://egdesk.cloud',
+        Origin: 'https://egdesk.cloud',
+      },
     });
 
     const text = await resp.text();
@@ -48,6 +52,6 @@ export async function GET(request: NextRequest) {
       });
     }
   } catch (e: any) {
-    return NextResponse.json({ error: e.message ?? String(e) }, { status: 500 });
+    return NextResponse.json({ error: e.message ?? String(e), cause: String(e?.cause ?? '') }, { status: 500 });
   }
 }
