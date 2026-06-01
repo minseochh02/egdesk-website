@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useConversations, Conversation } from '@/hooks/useConversations';
 import { useUserServers } from '@/hooks/useUserServers';
 import { useCodingProjects } from '@/hooks/useCodingProjects';
-import { MessageSquare, FileCode, Search, Plus, Cloud, CloudOff, Loader2, RefreshCw, PanelLeftClose, PanelLeft, Monitor, Globe } from 'lucide-react';
+import { MessageSquare, FileCode, Search, Plus, Cloud, CloudOff, Loader2, RefreshCw, PanelLeftClose, PanelLeft, Monitor, Globe, MessageSquareText } from 'lucide-react';
 
 interface SidebarProps {
   onNewChat: () => void;
@@ -15,6 +15,7 @@ interface SidebarProps {
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   onOpenCodingProject?: (projectName: string, projectUrl: string, tunnelId: string) => void;
+  onOpenFeedbackBoard?: () => void;
 }
 
 // Helper to format relative time
@@ -35,7 +36,7 @@ function formatRelativeTime(dateStr: string): string {
   return date.toLocaleDateString();
 }
 
-export default function Sidebar({ onNewChat, onSelectConversation, activeConversationId, onSignOut, isCollapsed = false, onToggleCollapse, onOpenCodingProject }: SidebarProps) {
+export default function Sidebar({ onNewChat, onSelectConversation, activeConversationId, onSignOut, isCollapsed = false, onToggleCollapse, onOpenCodingProject, onOpenFeedbackBoard }: SidebarProps) {
   const { user, signOut: authSignOut } = useAuth();
   const { servers } = useUserServers();
   const [searchQuery, setSearchQuery] = useState('');
@@ -388,6 +389,21 @@ export default function Sidebar({ onNewChat, onSelectConversation, activeConvers
         )}
       </div>
 
+      {/* 피드백 메뉴 버튼 (프로필 정보 바로 위 영역) */}
+      <div className={`px-2 mb-2 ${isCollapsed ? 'flex justify-center' : ''}`}>
+        <button
+          onClick={onOpenFeedbackBoard}
+          className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition-all duration-200
+            bg-zinc-900/50 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800/60 hover:border-zinc-700/80 shadow-sm
+            ${isCollapsed ? 'justify-center w-10 h-10 p-0' : ''}`}
+          title={isCollapsed ? "의견 보내기 & 피드백" : undefined}
+          type="button"
+        >
+          <MessageSquareText className="w-4.5 h-4.5 text-blue-400 flex-shrink-0" />
+          {!isCollapsed && <span>피드백 및 의견</span>}
+        </button>
+      </div>
+
       {/* User Profile */}
       <div className={`border-t border-zinc-800 ${isCollapsed ? 'p-2' : 'p-4'}`}>
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
@@ -440,6 +456,7 @@ export default function Sidebar({ onNewChat, onSelectConversation, activeConvers
           )}
         </div>
       </div>
+
     </div>
   );
 }

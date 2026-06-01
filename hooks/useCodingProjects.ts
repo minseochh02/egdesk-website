@@ -36,11 +36,13 @@ export function useCodingProjects(tunnelId: string | null) {
   const fetchCodingProjects = async () => {
     if (!tunnelId || !session?.access_token) return;
 
+    // 환경 변수에서 터널 서비스 URL을 가져오며, 없을 경우 기본 URL을 사용합니다.
+    const baseUrl = process.env.NEXT_PUBLIC_TUNNEL_SERVICE_URL || 'https://tunneling-service.onrender.com';
+
     try {
-      // Call tunnel service API endpoint to get coding projects
-      // This endpoint will forward to EGDesk which queries the project registry
+      // 코딩 프로젝트 정보를 가져오기 위해 터널링 서비스 API 엔드포인트를 호출합니다.
       const response = await fetch(
-        `https://tunneling-service.onrender.com/t/${tunnelId}/api/coding-projects`,
+        `${baseUrl}/t/${tunnelId}/api/coding-projects`,
         {
           method: 'GET',
           headers: {
@@ -51,7 +53,8 @@ export function useCodingProjects(tunnelId: string | null) {
       );
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch coding projects: ${response.statusText}`);
+        // 응답 상태코드와 텍스트를 함께 표시하여 디버깅을 용이하게 합니다.
+        throw new Error(`Failed to fetch coding projects: ${response.status} ${response.statusText || ''}`);
       }
 
       const data = await response.json();
@@ -63,7 +66,8 @@ export function useCodingProjects(tunnelId: string | null) {
         throw new Error(data.error || 'Failed to fetch projects');
       }
     } catch (err) {
-      console.error('Error fetching coding projects:', err);
+      // 터널이 오프라인인 경우 매 5초 폴링 시마다 콘솔이 에러 로그로 도배되는 것을 방지하기 위해 warn 수준으로 완화합니다.
+      console.warn('Error fetching coding projects (tunnel might be offline):', err instanceof Error ? err.message : err);
       setError(err instanceof Error ? err.message : 'Unknown error');
       setProjects([]);
     } finally {

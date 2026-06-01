@@ -3,9 +3,10 @@
 import ChatArea from './ChatArea';
 import AppsScriptEditor from './AppsScriptEditor';
 import CodingProjectViewer from './CodingProjectViewer';
-import { MessageSquare, FileCode, Monitor } from 'lucide-react';
+import FeedbackBoard from './FeedbackBoard';
+import { MessageSquare, FileCode, Monitor, ClipboardList } from 'lucide-react';
 
-export type TabType = 'chat' | 'apps-script-editor' | 'coding-project';
+export type TabType = 'chat' | 'apps-script-editor' | 'coding-project' | 'feedback-board';
 
 export interface Tab {
   id: string;
@@ -93,6 +94,8 @@ export default function TabWindow({
                   <FileCode className="w-4 h-4 flex-shrink-0 text-blue-400" />
                 ) : tab.type === 'coding-project' ? (
                   <Monitor className="w-4 h-4 flex-shrink-0 text-green-400" />
+                ) : tab.type === 'feedback-board' ? (
+                  <ClipboardList className="w-4 h-4 flex-shrink-0 text-purple-400" />
                 ) : (
                   <MessageSquare className="w-4 h-4 flex-shrink-0 text-zinc-400" />
                 )}
@@ -165,6 +168,8 @@ export default function TabWindow({
                 projectUrl={tab.data.codingProjectUrl!}
                 tunnelId={tab.data.tunnelId!}
               />
+            ) : tab.type === 'feedback-board' ? (
+              <FeedbackBoard />
             ) : (
               <ChatArea
                 tabId={tab.id}

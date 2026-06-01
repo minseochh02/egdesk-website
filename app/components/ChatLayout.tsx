@@ -123,6 +123,30 @@ export default function ChatLayout() {
     setActiveTab(newId);
   };
 
+  const handleOpenFeedbackBoard = () => {
+    const newId = 'feedback-board-tab';
+
+    // 이미 피드백 게시판 탭이 존재하는지 확인
+    const existingTab = tabs.find(t => t.id === newId);
+    if (existingTab) {
+      setActiveTab(newId);
+      setTabs(tabs.map(tab => ({ ...tab, active: tab.id === newId })));
+      return;
+    }
+
+    // 새로운 피드백 게시판 탭 추가 및 활성화
+    setTabs([
+      ...tabs.map(tab => ({ ...tab, active: false })),
+      {
+        id: newId,
+        title: '피드백 게시판',
+        active: true,
+        type: 'feedback-board',
+      }
+    ]);
+    setActiveTab(newId);
+  };
+
   const closeTab = (id: string) => {
     if (tabs.length === 1) return; // Don't close the last tab
     
@@ -245,6 +269,7 @@ export default function ChatLayout() {
         isCollapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
         onOpenCodingProject={handleOpenCodingProject}
+        onOpenFeedbackBoard={handleOpenFeedbackBoard}
       />
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
         {/* Mobile header bar with hamburger */}
