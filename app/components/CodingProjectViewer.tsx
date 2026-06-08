@@ -98,7 +98,14 @@ export default function CodingProjectViewer({
   };
 
   const handleOpenExternal = () => {
-    window.open(fullUrl, '_blank', 'noopener,noreferrer');
+    // Append the Supabase access token so the external tab can authenticate
+    // without relying on the session cookie (which only exists in this browser session).
+    // The server already accepts ?token= as an alternative to the Authorization header.
+    const baseUrl = `https://tunneling-service.onrender.com/t/${tunnelId}/p/${projectName}/`;
+    const externalUrl = session?.access_token
+      ? `${baseUrl}?token=${session.access_token}`
+      : baseUrl;
+    window.open(externalUrl, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -109,7 +116,9 @@ export default function CodingProjectViewer({
           <div className="flex items-center gap-2 text-sm text-zinc-400">
             <span className="font-medium text-white">{projectName}</span>
             <span>•</span>
-            <span className="font-mono text-xs">{fullUrl}</span>
+            <span className="font-mono text-xs text-zinc-500" title="Requires authentication to access directly">
+              /t/{tunnelId}/p/{projectName}/
+            </span>
           </div>
         </div>
 

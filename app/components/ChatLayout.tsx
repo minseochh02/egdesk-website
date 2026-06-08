@@ -1,15 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserServers } from '@/hooks/useUserServers';
 import { Conversation } from '@/hooks/useConversations';
 import Sidebar from './Sidebar';
 import TabWindow, { Tab } from './TabWindow';
-import SignInPage from './SignInPage';
 
 export default function ChatLayout() {
   const { user, loading, signOut } = useAuth();
+  const router = useRouter();
   const { servers } = useUserServers();
   const [activeTab, setActiveTab] = useState('chat-1');
   const [tabs, setTabs] = useState<Tab[]>([
@@ -234,6 +235,12 @@ export default function ChatLayout() {
     }
   };
 
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace('/login');
+    }
+  }, [loading, user, router]);
+
   // Show loading state
   if (loading) {
     return (
@@ -246,9 +253,15 @@ export default function ChatLayout() {
     );
   }
 
-  // Show sign-in page if not authenticated
   if (!user) {
-    return <SignInPage />;
+    return (
+      <div className="flex h-screen bg-zinc-900 items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-zinc-400">Redirecting to login...</p>
+        </div>
+      </div>
+    );
   }
 
   // Show main chat interface if authenticated

@@ -1,5 +1,5 @@
-import ChatLayout from './components/ChatLayout';
+import HomePage from './components/HomePage';
 
 export default function Home() {
-  return <ChatLayout />;
+  return <HomePage />;
 }

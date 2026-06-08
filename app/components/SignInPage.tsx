@@ -2,7 +2,8 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
-import { Shield, Lock, Zap, Github } from 'lucide-react';
+import Link from 'next/link';
+import { Shield, Lock, Zap, Github, ArrowLeft } from 'lucide-react';
 
 export default function SignInPage() {
   const { signInWithGoogle, signInWithGithub } = useAuth();
@@ -24,6 +25,15 @@ export default function SignInPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
+        <div className="mb-6">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            랜딩 페이지로 돌아가기
+          </Link>
+        </div>
         {/* Logo/Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 mb-4">
