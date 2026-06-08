@@ -3,7 +3,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import '@/app/landing/landing.css';
 import LandingHeader from './LandingHeader';
 import LandingFooter from './LandingFooter';
 import { landingImage } from './landing-utils';
