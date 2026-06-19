@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 type LandingHeaderProps = {
-  activeNav?: 'home' | 'detail';
+  activeNav?: 'home' | 'detail' | 'banking';
 };
 
 export default function LandingHeader({ activeNav = 'home' }: LandingHeaderProps) {
@@ -18,8 +18,8 @@ export default function LandingHeader({ activeNav = 'home' }: LandingHeaderProps
           <li className="nav-item">
             <Link href="/#necessity">특장점</Link>
           </li>
-          <li className="nav-item">
-            <Link href="/#banking-ai">뱅킹 AI</Link>
+          <li className={`nav-item${activeNav === 'banking' ? ' active' : ''}`}>
+            <Link href="/internet-banking-ai">뱅킹 AI</Link>
           </li>
           <li className="nav-item">
             <Link href="/#lineups">라인업</Link>

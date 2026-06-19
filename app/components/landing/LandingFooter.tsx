@@ -26,7 +26,10 @@ export default function LandingFooter() {
               <Link href="/#lineups">제품 라인업</Link>
             </li>
             <li>
-              <Link href="/?section=banking-contact">인터넷뱅킹AI 상담</Link>
+              <Link href="/internet-banking-ai">인터넷뱅킹AI</Link>
+            </li>
+            <li>
+              <Link href="/internet-banking-ai#contact">인터넷뱅킹AI 상담</Link>
             </li>
             <li>
               <Link href="/landing/detail">상세 기술 사양</Link>
