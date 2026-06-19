@@ -54,6 +54,39 @@ export default function LandingFooter() {
           </ul>
         </div>
         <div className="footer-col">
+          <h4 className="footer-col-title">커뮤니티</h4>
+          <ul className="footer-col-links">
+            <li>
+              <a
+                href="https://www.youtube.com/channel/UClYw5oJJDZFC7o764lI0NUA"
+                target="_blank"
+                rel="noreferrer"
+              >
+                YouTube
+              </a>
+            </li>
+            <li>
+              <a href="https://x.com/EGDesk" target="_blank" rel="noreferrer">
+                X
+              </a>
+            </li>
+            <li>
+              <a href="https://discord.gg/ZgwFnSc38Q" target="_blank" rel="noreferrer">
+                Discord
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://join.slack.com/t/egdesk/shared_invite/zt-3zjrgr2cx-BzKxW5XfIk2qpuN~bYKlMw"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Slack
+              </a>
+            </li>
+          </ul>
+        </div>
+        <div className="footer-col">
           <h4 className="footer-col-title">고객 지원 &amp; 기술 본부</h4>
           <p>
             <strong>주소:</strong> 경기도 시흥시 서울대학로 59-69 배곧테크노밸리 609호
