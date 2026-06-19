@@ -86,19 +86,31 @@
     font-weight: 800;
     font-size: 1.5rem;
     letter-spacing: -0.5px;
-    background: var(--gradient-primary);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
     text-decoration: none;
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex-shrink: 0;
 }
 
 .landing-page .logo span {
     color: var(--text-primary);
     -webkit-text-fill-color: var(--text-primary);
     font-weight: 300;
+}
+
+.landing-page .logo-img {
+    width: 52px;
+    height: 52px;
+    display: block;
+    border-radius: 12px;
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.3), 0 0 18px rgba(95, 230, 230, 0.12);
+}
+
+.landing-page .logo-img--footer {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
 }
 
 .landing-page .nav-menu {
@@ -181,6 +193,7 @@
     max-width: var(--container-max);
     margin: 0 auto;
     padding: var(--section-padding-top) var(--container-padding-x) var(--section-padding-bottom);
+    scroll-margin-top: 88px;
 }
 
 .landing-page .section-band {
@@ -612,6 +625,161 @@
     transform: translateX(4px);
 }
 
+/* Internet Banking AI Section */
+.landing-page .banking-ai-section {
+    background: linear-gradient(180deg, rgba(155, 81, 224, 0.04) 0%, rgba(0, 242, 254, 0.02) 100%);
+}
+
+.landing-page .banking-ai-container {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(320px, 1.1fr);
+    gap: 3rem;
+    align-items: center;
+}
+
+.landing-page .banking-ai-copy .section-title {
+    margin-bottom: 1.25rem;
+}
+
+.landing-page .banking-ai-heading-mark {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.landing-page .banking-ai-heading-mark .badge {
+    margin-bottom: 0;
+}
+
+.landing-page .banking-ai-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 18px;
+    box-shadow: 0 18px 34px rgba(0, 0, 0, 0.35), 0 0 24px rgba(95, 230, 230, 0.16);
+}
+
+.landing-page .banking-ai-copy .section-title span {
+    background: var(--gradient-purple);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.landing-page .banking-ai-copy .section-subtitle {
+    margin-left: 0;
+    max-width: 560px;
+}
+
+.landing-page .banking-ai-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.landing-page .banking-ai-panel {
+    position: relative;
+    overflow: hidden;
+}
+
+.landing-page .banking-ai-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(0, 242, 254, 0.08), rgba(155, 81, 224, 0.1));
+    pointer-events: none;
+}
+
+.landing-page .banking-ai-panel > * {
+    position: relative;
+    z-index: 1;
+}
+
+.landing-page .banking-ai-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1.4rem;
+    border-bottom: 1px solid var(--card-border);
+}
+
+.landing-page .banking-ai-panel-header strong {
+    font-family: var(--font-heading);
+    font-size: 1.45rem;
+    line-height: 1.25;
+}
+
+.landing-page .banking-ai-status {
+    color: var(--accent-blue);
+    font-family: var(--font-heading);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.landing-page .banking-ai-feature-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.landing-page .banking-ai-feature {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 1rem;
+    align-items: flex-start;
+    padding: 1.1rem;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.18);
+}
+
+.landing-page .banking-ai-feature-icon {
+    width: 48px;
+    height: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: rgba(0, 242, 254, 0.1);
+    border: 1px solid rgba(0, 242, 254, 0.22);
+    color: var(--accent-blue);
+    font-family: var(--font-heading);
+    font-weight: 800;
+}
+
+.landing-page .banking-ai-feature strong {
+    display: block;
+    margin-bottom: 0.3rem;
+    color: var(--text-primary);
+    font-size: 1.02rem;
+}
+
+.landing-page .banking-ai-feature p {
+    color: var(--text-secondary);
+    font-size: 0.93rem;
+}
+
+.landing-page .banking-ai-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 1.6rem;
+}
+
+.landing-page .banking-ai-tags span {
+    color: #c084fc;
+    background: rgba(155, 81, 224, 0.1);
+    border: 1px solid rgba(155, 81, 224, 0.18);
+    border-radius: 999px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
 
 /* Compare Image Section */
 .landing-page .compare-container {
@@ -900,6 +1068,16 @@
     width: 100%;
     max-width: var(--container-max);
     margin: 0 auto var(--section-padding-bottom) auto;
+}
+
+.landing-page .banking-contact-section {
+    border-color: rgba(155, 81, 224, 0.24);
+    background: linear-gradient(180deg, rgba(155, 81, 224, 0.06), rgba(255, 255, 255, 0.03));
+}
+
+.landing-page .banking-contact-section:hover {
+    transform: none;
+    border-color: rgba(155, 81, 224, 0.36);
 }
 
 .landing-page .form-group-row {
@@ -1251,6 +1429,28 @@
         flex-direction: column;
         gap: 2.5rem;
     }
+
+    .landing-page .banking-ai-container {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+
+    .landing-page .banking-ai-copy {
+        text-align: center;
+    }
+
+    .landing-page .banking-ai-heading-mark {
+        justify-content: center;
+    }
+
+    .landing-page .banking-ai-copy .section-subtitle {
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .landing-page .banking-ai-actions {
+        justify-content: center;
+    }
     
     .landing-page .detail-layout {
         grid-template-columns: 1fr;
@@ -1290,6 +1490,35 @@
     
     .landing-page .section-title {
         font-size: 1.85rem;
+    }
+
+    .landing-page .banking-ai-panel {
+        padding: 1.5rem;
+    }
+
+    .landing-page .banking-ai-heading-mark {
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+
+    .landing-page .banking-ai-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+    }
+
+    .landing-page .banking-ai-panel-header {
+        flex-direction: column;
+    }
+
+    .landing-page .banking-ai-feature {
+        grid-template-columns: 42px 1fr;
+        padding: 0.95rem;
+    }
+
+    .landing-page .banking-ai-feature-icon {
+        width: 42px;
+        height: 42px;
     }
     
     .landing-page .form-group-row {
@@ -1476,7 +1705,3 @@
     border-radius: 14px;
     display: block;
 }
-
-
-
-

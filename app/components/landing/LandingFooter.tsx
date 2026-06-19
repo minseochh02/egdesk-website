@@ -6,7 +6,7 @@ export default function LandingFooter() {
       <div className="footer-grid">
         <div className="footer-col">
           <Link href="/" className="logo">
-            EGDESK <span>AI_Server</span>
+            <img src="/landing/egdesk-logo.svg" alt="EGDESK" className="logo-img logo-img--footer" />
           </Link>
           <p>
             인공지능 연구의 새로운 기준. 최적화된 하드웨어 설계와 연산 가속 인프라로 딥러닝과
@@ -26,10 +26,13 @@ export default function LandingFooter() {
               <Link href="/#lineups">제품 라인업</Link>
             </li>
             <li>
+              <Link href="/?section=banking-contact">인터넷뱅킹AI 상담</Link>
+            </li>
+            <li>
               <Link href="/landing/detail">상세 기술 사양</Link>
             </li>
             <li>
-              <Link href="/landing/detail#quote">실시간 견적 문의</Link>
+              <Link href="/landing/detail#quote">AI_Server 견적 문의</Link>
             </li>
           </ul>
         </div>

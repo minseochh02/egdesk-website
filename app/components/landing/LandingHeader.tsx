@@ -9,7 +9,7 @@ export default function LandingHeader({ activeNav = 'home' }: LandingHeaderProps
     <header>
       <div className="nav-container">
         <Link href="/" className="logo">
-          EGDESK <span>AI_Server</span>
+          <img src="/landing/egdesk-logo.svg" alt="EGDESK" className="logo-img" />
         </Link>
         <ul className="nav-menu">
           <li className={`nav-item${activeNav === 'home' ? ' active' : ''}`}>
@@ -17,6 +17,9 @@ export default function LandingHeader({ activeNav = 'home' }: LandingHeaderProps
           </li>
           <li className="nav-item">
             <Link href="/#necessity">특장점</Link>
+          </li>
+          <li className="nav-item">
+            <Link href="/#banking-ai">뱅킹 AI</Link>
           </li>
           <li className="nav-item">
             <Link href="/#lineups">라인업</Link>

@@ -1,0 +1,28 @@
+<svg width="1024" height="1024" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0.3" y1="0" x2="0.7" y2="1">
+      <stop offset="0%" stop-color="#1d2750"/>
+      <stop offset="100%" stop-color="#10162e"/>
+    </linearGradient>
+    <clipPath id="rounded">
+      <rect width="200" height="200" rx="46"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#rounded)">
+    <rect width="200" height="200" fill="url(#bg)"/>
+    <!-- E icon shifted up to make room for text -->
+    <rect x="58" y="32" width="22" height="92" rx="9" fill="#A6B3CE"/>
+    <rect x="74" y="38" width="72" height="22" rx="8" fill="#EAEFFF"/>
+    <rect x="74" y="73" width="56" height="22" rx="8" fill="#EAEFFF"/>
+    <rect x="74" y="108" width="72" height="22" rx="8" fill="#EAEFFF"/>
+    <circle cx="90" cy="49" r="3.6" fill="#4FE3E3"/>
+    <circle cx="103" cy="49" r="3.6" fill="#4FE3E3"/>
+    <circle cx="90" cy="84" r="3.6" fill="#4FE3E3"/>
+    <circle cx="103" cy="84" r="3.6" fill="#4FE3E3"/>
+    <circle cx="90" cy="119" r="3.6" fill="#4FE3E3"/>
+    <circle cx="103" cy="119" r="3.6" fill="#4FE3E3"/>
+    <!-- 인터넷뱅킹AI text -->
+    <text x="100" y="158" text-anchor="middle" font-family="'Apple SD Gothic Neo','Malgun Gothic',sans-serif" font-size="18" font-weight="700" fill="#EAEFFF" letter-spacing="0.5">인터넷뱅킹</text>
+    <text x="100" y="178" text-anchor="middle" font-family="'SF Pro Display','Helvetica Neue',sans-serif" font-size="18" font-weight="700" fill="#5FE6E6" letter-spacing="1">AI</text>
+  </g>
+</svg>

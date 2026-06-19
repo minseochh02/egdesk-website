@@ -16,6 +16,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "EGDesk - Transform Your PC Into a Powerful AI Server",
   description: "EGDesk converts your computer into both an MCP server and local LLM server, accessible anywhere with your Google account.",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
