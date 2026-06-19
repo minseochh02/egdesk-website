@@ -6,10 +6,10 @@ import LandingFooter from '@/app/components/landing/LandingFooter';
 import LandingHeader from '@/app/components/landing/LandingHeader';
 import { landingImage } from '@/app/components/landing/landing-utils';
 
-const pageUrl = 'https://www.egdesk.cloud/internet-banking-ai';
+const pageUrl = 'https://egdesk.cloud/internet-banking-ai';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://www.egdesk.cloud'),
+  metadataBase: new URL('https://egdesk.cloud'),
   title: '인터넷뱅킹AI | 은행·카드·홈택스 자동수집 | EGDesk',
   description:
     '은행, 카드사, 홈택스에 반복 로그인해 거래·매출·세금 자료를 수집하고 엑셀로 정리하는 소상공인·경리 업무 자동화 솔루션입니다.',
@@ -53,7 +53,7 @@ const softwareApplication = {
   publisher: {
     '@type': 'Organization',
     name: 'EGDesk',
-    url: 'https://www.egdesk.cloud',
+    url: 'https://egdesk.cloud',
   },
 };
 

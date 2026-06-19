@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/api/', '/settings/'],
     },
-    sitemap: 'https://www.egdesk.cloud/sitemap.xml',
+    sitemap: 'https://egdesk.cloud/sitemap.xml',
   };
 }
