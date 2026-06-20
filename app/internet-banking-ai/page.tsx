@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import '@/app/landing/landing.css';
 import BankingAIContactForm from '@/app/components/landing/BankingAIContactForm';
 import LandingFooter from '@/app/components/landing/LandingFooter';
@@ -7,6 +6,7 @@ import LandingHeader from '@/app/components/landing/LandingHeader';
 import { landingImage } from '@/app/components/landing/landing-utils';
 
 const pageUrl = 'https://egdesk.cloud/internet-banking-ai';
+const latestDownloadUrl = '/download/internet-banking-ai/latest';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://egdesk.cloud'),
@@ -141,9 +141,9 @@ export default function InternetBankingAIPage() {
             >
               90초 데모 보기
             </a>
-            <Link href="#contact" className="btn-secondary">
-              도입 상담하기
-            </Link>
+            <a href={latestDownloadUrl} className="btn-secondary">
+              최신 버전 다운로드
+            </a>
           </div>
         </div>
         <div className="banking-product-summary glass-card">

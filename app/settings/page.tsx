@@ -66,7 +66,7 @@ export default function SettingsPage() {
             <span className="text-2xl font-bold text-white">EGDesk</span>
           </Link>
           <Link 
-            href="/"
+            href="/app"
             className="flex items-center gap-2 px-4 py-2 text-gray-300 hover:text-white transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -238,4 +238,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-

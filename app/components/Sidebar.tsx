@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConversations, Conversation } from '@/hooks/useConversations';
 import { useUserServers } from '@/hooks/useUserServers';
@@ -152,7 +153,11 @@ export default function Sidebar({ onNewChat, onSelectConversation, activeConvers
       {/* Header */}
       <div className={`flex flex-col ${isCollapsed ? 'items-center' : ''} p-4 border-b border-zinc-800 gap-3`}>
         <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} w-full`}>
-          {!isCollapsed && <h1 className="text-xl font-semibold text-white">EGDesk</h1>}
+          {!isCollapsed && (
+            <Link href="/" className="text-xl font-semibold text-white hover:text-blue-300 transition-colors">
+              EGDesk
+            </Link>
+          )}
           <div className="flex items-center gap-2">
             {/* Connection status - only show when expanded */}
             {!isCollapsed && (

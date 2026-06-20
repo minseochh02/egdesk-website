@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserServers } from '@/hooks/useUserServers';
@@ -296,7 +297,9 @@ export default function ChatLayout() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <span className="text-sm font-semibold text-white">EGDesk</span>
+          <Link href="/" className="text-sm font-semibold text-white hover:text-blue-300 transition-colors">
+            EGDesk
+          </Link>
         </div>
       <TabWindow
         tabs={tabs}

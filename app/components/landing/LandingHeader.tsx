@@ -32,7 +32,7 @@ export default function LandingHeader({ activeNav = 'home' }: LandingHeaderProps
           </li>
         </ul>
         <div className="nav-actions">
-          <Link href="/login" className="nav-btn nav-btn-outline">
+          <Link href="/login" className="nav-btn nav-btn-outline" target="_blank" rel="noopener noreferrer">
             웹 로그인
           </Link>
           <Link href="/landing/detail#quote" className="nav-btn">
