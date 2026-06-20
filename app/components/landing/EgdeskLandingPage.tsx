@@ -8,7 +8,8 @@ import LandingFooter from './LandingFooter';
 import LandingScrollHandler from './LandingScrollHandler';
 import { landingImage } from './landing-utils';
 
-const latestDownloadUrl = '/download/internet-banking-ai/latest';
+const egdeskDownloadUrl = '/download/latest';
+const bankingAIDownloadUrl = '/download/internet-banking-ai/latest';
 
 const lineups = [
   {
@@ -104,6 +105,9 @@ export default function EgdeskLandingPage() {
             <Link href="/landing/detail" className="btn-primary">
               상세 스펙 보기
             </Link>
+            <a href={egdeskDownloadUrl} className="btn-secondary">
+              EGDesk 다운로드
+            </a>
             <Link href="/#lineups" className="btn-secondary">
               라인업 둘러보기
             </Link>
@@ -232,7 +236,7 @@ export default function EgdeskLandingPage() {
               >
                 실제 구동 데모 보기
               </a>
-              <a href={latestDownloadUrl} className="btn-secondary">
+              <a href={bankingAIDownloadUrl} className="btn-secondary">
                 최신 버전 다운로드
               </a>
             </div>
