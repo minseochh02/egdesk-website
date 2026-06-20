@@ -237,7 +237,7 @@ export default function EgdeskLandingPage() {
                 실제 구동 데모 보기
               </a>
               <a href={bankingAIDownloadUrl} className="btn-secondary btn-download">
-                최신 버전 다운로드
+                뱅킹AI 다운로드
               </a>
             </div>
           </div>
