@@ -403,6 +403,21 @@
     object-fit: cover;
 }
 
+.landing-page .egdesk-collapse-banner {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 4rem 0 0;
+    scroll-margin-top: 0;
+    border-bottom: 1px solid var(--card-border);
+    background: #090d22;
+}
+
+.landing-page .egdesk-collapse-banner > div {
+    width: 100%;
+    border-radius: 0 !important;
+}
+
 /* Feature Image grid (Necessity and Processor) */
 .landing-page .feature-row {
     display: flex;

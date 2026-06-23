@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import '@/app/landing/landing.css';
 import BankingAIContactForm from './BankingAIContactForm';
+import EGDeskCollapseAnimation from './EGDeskCollapseAnimation';
 import LandingHeader from './LandingHeader';
 import LandingFooter from './LandingFooter';
 import LandingScrollHandler from './LandingScrollHandler';
@@ -88,6 +89,15 @@ export default function EgdeskLandingPage() {
       <LandingScrollHandler />
       <LandingHeader activeNav="home" />
 
+      <section className="egdesk-collapse-banner" aria-label="EGDesk brand animation">
+        <EGDeskCollapseAnimation
+          loop={false}
+          showActions
+          downloadHref={egdeskDownloadUrl}
+          loginHref="/login"
+        />
+      </section>
+
       <section className="hero" id="home">
         <div className="hero-content">
           <span className="badge">Next-Gen AI Workstation</span>
@@ -105,14 +115,8 @@ export default function EgdeskLandingPage() {
             <Link href="/landing/detail" className="btn-primary">
               상세 스펙 보기
             </Link>
-            <a href={egdeskDownloadUrl} className="btn-secondary btn-download">
-              EGDesk 다운로드
-            </a>
             <Link href="/#lineups" className="btn-secondary">
               라인업 둘러보기
-            </Link>
-            <Link href="/login" className="btn-secondary" target="_blank" rel="noopener noreferrer">
-              웹 인터페이스 로그인
             </Link>
           </div>
         </div>
