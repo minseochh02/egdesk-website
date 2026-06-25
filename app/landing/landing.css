@@ -1665,11 +1665,11 @@
         --section-padding-bottom: 3.5rem;
         font-size: 14px;
     }
-    
+
     .landing-page .nav-menu {
         display: none; /* simple mobile bypass for MVP, buttons remain */
     }
-    
+
     .landing-page .hero-title {
         font-size: 2.6rem;
     }
@@ -1684,7 +1684,7 @@
         width: 100%;
         white-space: normal;
     }
-    
+
     .landing-page .section-title {
         font-size: 1.85rem;
     }
@@ -1717,12 +1717,12 @@
         width: 42px;
         height: 42px;
     }
-    
+
     .landing-page .form-group-row {
         grid-template-columns: 1fr;
         gap: 0;
     }
-    
+
     .landing-page .footer-container {
         flex-direction: column;
         text-align: center;
@@ -1754,16 +1754,77 @@
         padding: 1rem;
     }
 
+    /* Collapse banner — shorter on tablet/mobile */
+    .landing-page .egdesk-collapse-banner {
+        padding: 2rem 0 0;
+    }
+
+    /* Processor feature grid — allow narrower columns */
+    .landing-page .processor-features-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .landing-page .processor-img-expanded-box {
+        padding: 1.5rem;
+    }
+
+    .landing-page .necessity-img-fullwidth {
+        padding: 1.5rem;
+    }
+
+    /* Glass card — reduce padding */
+    .landing-page .glass-card {
+        padding: 1.8rem;
+    }
+
+    /* Quote / contact section */
+    .landing-page .quote-section {
+        padding-left: var(--container-padding-x);
+        padding-right: var(--container-padding-x);
+    }
+
     /* Footer Mobile Adjustments */
     .landing-page .footer-grid {
         grid-template-columns: 1fr;
         gap: 2.5rem;
     }
-    
+
     .landing-page .footer-bottom {
         flex-direction: column;
         text-align: center;
         gap: 1.2rem;
+    }
+}
+
+/* Small phones */
+@media (max-width: 480px) {
+    .landing-page {
+        --container-padding-x: 1.25rem;
+        font-size: 15px;
+    }
+
+    .landing-page .hero-title {
+        font-size: 2.4rem;
+    }
+
+    .landing-page .section-title {
+        font-size: 1.75rem;
+    }
+
+    /* Banking AI actions stack vertically */
+    .landing-page .banking-ai-actions {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .landing-page .banking-ai-actions .btn-primary,
+    .landing-page .banking-ai-actions .btn-secondary {
+        width: 100%;
+    }
+
+    .landing-page .nav-btn-outline {
+        display: none;
     }
 }
 

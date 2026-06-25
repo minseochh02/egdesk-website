@@ -65,12 +65,14 @@ type TimelineContextValue = {
   time: number;
   duration: number;
   complete: boolean;
+  scale: number;
 };
 
 const TimelineContext = createContext<TimelineContextValue>({
   time: 0,
   duration: DURATION,
   complete: false,
+  scale: 1,
 });
 
 function useTimeline() {
@@ -124,6 +126,7 @@ function useLoopingTime(duration: number, loop: boolean) {
 function Stage({ children, loop = true }: { children: ReactNode; loop?: boolean }) {
   const stageRef = useRef<HTMLDivElement | null>(null);
   const [scale, setScale] = useState(1);
+  const [containerWidth, setContainerWidth] = useState(WIDTH);
   const { time, complete } = useLoopingTime(DURATION, loop);
 
   useLayoutEffect(() => {
@@ -131,7 +134,9 @@ function Stage({ children, loop = true }: { children: ReactNode; loop?: boolean 
     if (!el) return;
 
     const measure = () => {
-      setScale(Math.max(0.05, Math.min(el.clientWidth / WIDTH, el.clientHeight / HEIGHT)));
+      const w = el.clientWidth;
+      setContainerWidth(w);
+      setScale(Math.max(0.05, Math.min(w / WIDTH, el.clientHeight / HEIGHT)));
     };
 
     measure();
@@ -145,7 +150,12 @@ function Stage({ children, loop = true }: { children: ReactNode; loop?: boolean 
     };
   }, []);
 
-  const value = useMemo(() => ({ time, duration: DURATION, complete }), [complete, time]);
+  // On narrow screens, use a taller (more square) aspect ratio so the
+  // animation occupies more vertical space and feels larger.
+  const isMobile = containerWidth < 768;
+  const aspectRatio = isMobile ? '4 / 3' : `${WIDTH} / ${HEIGHT}`;
+
+  const value = useMemo(() => ({ time, duration: DURATION, complete, scale }), [complete, time, scale]);
 
   return (
     <div
@@ -153,7 +163,7 @@ function Stage({ children, loop = true }: { children: ReactNode; loop?: boolean 
       style={{
         position: 'relative',
         width: '100%',
-        aspectRatio: `${WIDTH} / ${HEIGHT}`,
+        aspectRatio,
         minHeight: 240,
         overflow: 'hidden',
         background: '#090d22',
@@ -463,7 +473,7 @@ const constellationClusters: ClusterInfo[] = [
 // Pick the innermost star per cluster to draw the radial line to the hub
 const clusterAnchors = [3, 8, 12, 13, 18, 22, 25];
 
-function ConstellationField({ time, complete }: { time: number; complete: boolean }) {
+function ConstellationField({ time, complete, scale }: { time: number; complete: boolean; scale: number }) {
   const [hoveredStar, setHoveredStar] = useState<number | null>(null);
   const reveal = complete
     ? 1
@@ -478,8 +488,18 @@ function ConstellationField({ time, complete }: { time: number; complete: boolea
   // Flowing dash offset for radial lines
   const flowOffset = twinkleTime * 28;
 
+  // Responsive boost: when canvas is scaled down (mobile), enlarge elements
+  // so they remain visible. At scale=1 (desktop), boost=1. At scale=0.2 (phone), boost≈2.5
+  const boost = Math.max(1, Math.min(3, 1 / Math.sqrt(scale)));
+
   return (
     <div
+      onTouchStart={(e) => {
+        // Dismiss tooltip when tapping the background (not a star button)
+        if ((e.target as HTMLElement).tagName !== 'BUTTON') {
+          setHoveredStar(null);
+        }
+      }}
       style={{
         position: 'absolute',
         inset: 0,
@@ -534,9 +554,9 @@ function ConstellationField({ time, complete }: { time: number; complete: boolea
           r={120}
           fill="none"
           stroke={TEAL_SOFT}
-          strokeWidth="1.2"
+          strokeWidth={1.2 * boost}
           strokeOpacity={0.12 * hubReveal}
-          strokeDasharray="6 10"
+          strokeDasharray={`${6 * boost} ${10 * boost}`}
           strokeDashoffset={-flowOffset * 0.3}
         />
         {/* Hub inner ring */}
@@ -546,9 +566,9 @@ function ConstellationField({ time, complete }: { time: number; complete: boolea
           r={80}
           fill="none"
           stroke={TEAL_SOFT}
-          strokeWidth="0.8"
+          strokeWidth={0.8 * boost}
           strokeOpacity={0.08 * hubReveal}
-          strokeDasharray="3 8"
+          strokeDasharray={`${3 * boost} ${8 * boost}`}
           strokeDashoffset={flowOffset * 0.2}
         />
 
@@ -579,9 +599,9 @@ function ConstellationField({ time, complete }: { time: number; complete: boolea
               x2={endX}
               y2={endY}
               stroke={TEAL_SOFT}
-              strokeWidth={isGroupHovered ? '1.8' : '1'}
+              strokeWidth={(isGroupHovered ? 1.8 : 1) * boost}
               strokeLinecap="round"
-              strokeDasharray="4 14"
+              strokeDasharray={`${4 * boost} ${14 * boost}`}
               strokeDashoffset={-flowOffset}
               strokeOpacity={(isGroupHovered ? 0.32 : 0.1) * radialReveal}
             />
@@ -603,15 +623,15 @@ function ConstellationField({ time, complete }: { time: number; complete: boolea
           return (
             <text
               key={`label-${index}`}
-              x={cluster.cx + cluster.labelOffset.dx}
-              y={cluster.cy + cluster.labelOffset.dy}
+              x={cluster.cx + cluster.labelOffset.dx * boost}
+              y={cluster.cy + cluster.labelOffset.dy * boost}
               textAnchor="middle"
               dominantBaseline="middle"
               fill={TEAL_SOFT}
               fontFamily={MONO}
-              fontSize="11"
+              fontSize={11 * boost}
               fontWeight="600"
-              letterSpacing="2.5"
+              letterSpacing={2.5 * boost}
               opacity={(isGroupHovered ? 0.55 : 0.2) * labelReveal}
             >
               {cluster.label}
@@ -646,9 +666,9 @@ function ConstellationField({ time, complete }: { time: number; complete: boolea
               x2={e.x}
               y2={e.y}
               stroke={TEAL_SOFT}
-              strokeWidth={isActive ? '2.2' : isBridge ? '0.8' : '1.4'}
+              strokeWidth={(isActive ? 2.2 : isBridge ? 0.8 : 1.4) * boost}
               strokeLinecap="round"
-              strokeDasharray={isBridge ? '6 14' : undefined}
+              strokeDasharray={isBridge ? `${6 * boost} ${14 * boost}` : undefined}
               strokeDashoffset={isBridge ? -flowOffset * 0.6 : undefined}
               strokeOpacity={(isActive ? 0.48 : isBridge ? 0.1 : 0.22) * lineReveal}
             />
@@ -665,10 +685,10 @@ function ConstellationField({ time, complete }: { time: number; complete: boolea
                 ease: Easing.easeOutBack,
               })(time);
           const pulse = 0.74 + 0.26 * Math.sin(twinkleTime * 2.3 + index * 1.7);
-          const radius = star.r * (0.7 + 0.3 * starReveal) * pulse;
+          const radius = star.r * (0.7 + 0.3 * starReveal) * pulse * boost;
           const isHovered = hoveredStar === index;
-          const ringRadius = isHovered ? 16 : 10;
-          const outerPulseRadius = ringRadius + 6 + 4 * Math.sin(twinkleTime * 1.6 + index * 2.1);
+          const ringRadius = (isHovered ? 16 : 10) * boost;
+          const outerPulseRadius = ringRadius + 6 * boost + 4 * boost * Math.sin(twinkleTime * 1.6 + index * 2.1);
 
           return (
             <g key={`agent-${index}`}>
@@ -679,7 +699,7 @@ function ConstellationField({ time, complete }: { time: number; complete: boolea
                 r={svgNumber(outerPulseRadius * starReveal)}
                 fill="none"
                 stroke={TEAL_SOFT}
-                strokeWidth="0.6"
+                strokeWidth={0.6 * boost}
                 opacity={0.12 * starReveal * pulse}
               />
               {/* Agent ring */}
@@ -689,7 +709,7 @@ function ConstellationField({ time, complete }: { time: number; complete: boolea
                 r={svgNumber(ringRadius * starReveal)}
                 fill="url(#egdesk-agent-ring)"
                 stroke={TEAL_SOFT}
-                strokeWidth={isHovered ? '1.6' : '0.9'}
+                strokeWidth={(isHovered ? 1.6 : 0.9) * boost}
                 opacity={(isHovered ? 0.6 : 0.32) * starReveal}
               />
               {/* Core glow */}
@@ -723,12 +743,16 @@ function ConstellationField({ time, complete }: { time: number; complete: boolea
           onBlur={() => setHoveredStar(null)}
           onMouseEnter={() => setHoveredStar(index)}
           onMouseLeave={() => setHoveredStar(null)}
+          onTouchStart={(e) => {
+            e.preventDefault();
+            setHoveredStar((prev) => (prev === index ? null : index));
+          }}
           style={{
             position: 'absolute',
-            left: star.x - 30,
-            top: star.y - 30,
-            width: 60,
-            height: 60,
+            left: star.x - 45,
+            top: star.y - 45,
+            width: 90,
+            height: 90,
             border: 0,
             borderRadius: '50%',
             background: 'transparent',
@@ -746,17 +770,17 @@ function ConstellationField({ time, complete }: { time: number; complete: boolea
           style={{
             position: 'absolute',
             left: activeStar.x,
-            top: activeStar.y - 58,
-            minWidth: 150,
-            maxWidth: 260,
-            padding: '10px 16px',
-            border: '1px solid rgba(79, 227, 227, 0.36)',
-            borderRadius: 10,
+            top: activeStar.y - 58 * boost,
+            minWidth: 150 * boost,
+            maxWidth: 300 * boost,
+            padding: `${10 * boost}px ${16 * boost}px`,
+            border: `${boost}px solid rgba(79, 227, 227, 0.36)`,
+            borderRadius: 10 * boost,
             background: 'rgba(8, 13, 34, 0.9)',
             boxShadow: '0 12px 34px rgba(0, 0, 0, 0.42), 0 0 28px rgba(47, 224, 207, 0.14)',
             color: '#eef2fa',
             fontFamily: WORD_FONT,
-            fontSize: 17,
+            fontSize: 17 * boost,
             fontWeight: 800,
             lineHeight: 1.2,
             textAlign: 'center',
@@ -769,12 +793,12 @@ function ConstellationField({ time, complete }: { time: number; complete: boolea
           <span
             style={{
               display: 'block',
-              fontSize: 9,
+              fontSize: 9 * boost,
               fontFamily: MONO,
               fontWeight: 600,
-              letterSpacing: '1.8px',
+              letterSpacing: `${1.8 * boost}px`,
               color: TEAL_SOFT,
-              marginBottom: 3,
+              marginBottom: 3 * boost,
               textTransform: 'uppercase',
             }}
           >
@@ -785,12 +809,12 @@ function ConstellationField({ time, complete }: { time: number; complete: boolea
             style={{
               position: 'absolute',
               left: activeStar.x > WIDTH - 260 ? 'calc(100% - 18px)' : '50%',
-              bottom: -6,
-              width: 12,
-              height: 12,
+              bottom: -6 * boost,
+              width: 12 * boost,
+              height: 12 * boost,
               background: 'rgba(8, 13, 34, 0.9)',
-              borderRight: '1px solid rgba(79, 227, 227, 0.36)',
-              borderBottom: '1px solid rgba(79, 227, 227, 0.36)',
+              borderRight: `${boost}px solid rgba(79, 227, 227, 0.36)`,
+              borderBottom: `${boost}px solid rgba(79, 227, 227, 0.36)`,
               transform: 'translateX(-50%) rotate(45deg)',
             }}
           />
@@ -814,7 +838,7 @@ const letters = [
 ];
 
 function EGDeskScene({ holdFinal = false }: { holdFinal?: boolean }) {
-  const { time, complete } = useTimeline();
+  const { time, complete, scale } = useTimeline();
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const [measurement, setMeasurement] = useState<LetterMeasurement | null>(null);
 
@@ -872,7 +896,7 @@ function EGDeskScene({ holdFinal = false }: { holdFinal?: boolean }) {
         fontFamily: WORD_FONT,
       }}
     >
-      <ConstellationField time={time} complete={complete} />
+      <ConstellationField time={time} complete={complete} scale={scale} />
       <BgWatermark time={time} />
 
       <div

@@ -104,6 +104,11 @@ export default function LandingFooter() {
         <p className="footer-copyright">&copy; 2026 QUUS. LLC All rights reserved.</p>
         <ul className="footer-bottom-links">
           <li>
+            <a href="https://www.quus.cloud/" target="_blank" rel="noreferrer">
+              회사 소개
+            </a>
+          </li>
+          <li>
             <a href="/landing/privacy.html">개인정보처리방침</a>
           </li>
           <li>
