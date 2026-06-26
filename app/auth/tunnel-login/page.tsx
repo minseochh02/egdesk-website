@@ -1,16 +1,16 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { Suspense, useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 
 const TUNNEL_SERVER_URL = 'https://tunneling-service.onrender.com';
 
-export default function TunnelLoginPage() {
+function TunnelLoginContent() {
   const searchParams = useSearchParams();
   const { user, session, loading } = useAuth();
-  const [status, setStatus] = useState<'loading' | 'login' | 'exchanging' | 'error'>('loading');
+  const [status, setStatus] = useState<'idle' | 'exchanging' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
 
   // Read from URL params first, fall back to sessionStorage (post-OAuth redirect)
@@ -27,6 +27,15 @@ export default function TunnelLoginPage() {
       }
     } catch {}
   }
+
+  const missingParamError = !redirect || !tunnelId ? 'Missing redirect URL or tunnel ID' : null;
+  const effectiveStatus = loading
+    ? 'loading'
+    : missingParamError || status === 'error'
+      ? 'error'
+      : status === 'exchanging' || (user && session)
+        ? 'exchanging'
+        : 'login';
 
   const exchangeAndRedirect = useCallback(async () => {
     if (!redirect || !tunnelId || !session?.access_token) return;
@@ -64,19 +73,16 @@ export default function TunnelLoginPage() {
   useEffect(() => {
     if (loading) return;
 
-    if (!redirect || !tunnelId) {
-      setError('Missing redirect URL or tunnel ID');
-      setStatus('error');
-      return;
-    }
+    if (missingParamError) return;
 
     if (user && session) {
       // Already logged in — exchange token immediately
-      exchangeAndRedirect();
-    } else {
-      setStatus('login');
+      const id = window.setTimeout(() => {
+        exchangeAndRedirect();
+      }, 0);
+      return () => window.clearTimeout(id);
     }
-  }, [loading, user, session, redirect, tunnelId, exchangeAndRedirect]);
+  }, [loading, user, session, missingParamError, exchangeAndRedirect]);
 
   const handleLogin = async () => {
     try {
@@ -135,7 +141,7 @@ export default function TunnelLoginPage() {
           )}
         </div>
 
-        {status === 'loading' && (
+        {effectiveStatus === 'loading' && (
           <div style={{ color: '#a1a1aa', fontSize: '14px' }}>
             <div style={{
               width: '24px', height: '24px',
@@ -147,7 +153,7 @@ export default function TunnelLoginPage() {
           </div>
         )}
 
-        {status === 'login' && (
+        {effectiveStatus === 'login' && (
           <button
             onClick={handleLogin}
             style={{
@@ -172,7 +178,7 @@ export default function TunnelLoginPage() {
           </button>
         )}
 
-        {status === 'exchanging' && (
+        {effectiveStatus === 'exchanging' && (
           <div style={{ color: '#a1a1aa', fontSize: '14px' }}>
             <div style={{
               width: '24px', height: '24px',
@@ -184,10 +190,10 @@ export default function TunnelLoginPage() {
           </div>
         )}
 
-        {status === 'error' && (
+        {effectiveStatus === 'error' && (
           <div>
             <p style={{ color: '#ef4444', fontSize: '14px', marginBottom: '16px' }}>
-              {error}
+              {error || missingParamError}
             </p>
             <button
               onClick={() => window.location.href = redirect || '/'}
@@ -209,5 +215,25 @@ export default function TunnelLoginPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function TunnelLoginPage() {
+  return (
+    <Suspense fallback={
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#0a0a0a',
+        color: '#a1a1aa',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      }}>
+        Loading...
+      </div>
+    }>
+      <TunnelLoginContent />
+    </Suspense>
   );
 }
