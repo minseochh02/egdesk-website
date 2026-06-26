@@ -10,10 +10,12 @@ export async function GET(request: Request) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
-    
+
     await supabase.auth.exchangeCodeForSession(code);
   }
 
-  // URL to redirect to after sign in process completes
-  return NextResponse.redirect(new URL('/app', requestUrl.origin));
+  // Honour a `next` param so callers can control post-login destination
+  const next = requestUrl.searchParams.get('next');
+  const destination = next && next.startsWith('/') ? next : '/app';
+  return NextResponse.redirect(new URL(destination, requestUrl.origin));
 }
