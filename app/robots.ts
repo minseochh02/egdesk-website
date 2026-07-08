@@ -5,7 +5,14 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/api/', '/settings/'],
+      disallow: [
+        '/api/',
+        '/settings/',
+        '/login/',
+        '/app/',
+        '/search/',
+        '/auth/',
+      ],
     },
     sitemap: 'https://egdesk.cloud/sitemap.xml',
   };
