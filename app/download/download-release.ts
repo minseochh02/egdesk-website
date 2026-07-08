@@ -35,7 +35,7 @@ export async function redirectToLatestReleaseAsset({ apiUrl, fallbackUrl }: Late
         Accept: 'application/vnd.github+json',
         'User-Agent': 'egdesk-website',
       },
-      next: { revalidate: 300 },
+      cache: 'no-store',
     });
 
     if (!response.ok) {
