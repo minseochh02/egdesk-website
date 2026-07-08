@@ -9,7 +9,6 @@ const pageUrl = 'https://egdesk.cloud/internet-banking-ai';
 const latestDownloadUrl = '/download/internet-banking-ai/latest';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://egdesk.cloud'),
   title: '인터넷뱅킹AI | 은행·카드·홈택스 자동수집 | EGDesk',
   description:
     '은행, 카드사, 홈택스에 반복 로그인해 거래·매출·세금 자료를 수집하고 엑셀로 정리하는 소상공인·경리 업무 자동화 솔루션입니다.',

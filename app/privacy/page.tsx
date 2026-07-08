@@ -1,5 +1,19 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy | EGDesk',
+  description:
+    'EGDesk privacy policy. Your data stays on your computer or in your own Google account.',
+  alternates: {
+    canonical: '/privacy',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
 
 export default function PrivacyPolicy() {
   return (

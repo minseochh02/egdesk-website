@@ -1,5 +1,19 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
+
+export const metadata: Metadata = {
+  title: 'Terms of Service | EGDesk',
+  description:
+    'EGDesk Terms of Service for the desktop application and web interface.',
+  alternates: {
+    canonical: '/tos',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
 
 export default function TermsOfService() {
   return (
