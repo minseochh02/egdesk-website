@@ -1,11 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 type Props = {
   token: string;
   brandName: string;
+  /** Prefill from ?phone= */
+  initialPhone?: string;
+  /** One-tap from ?action=opt_in|opt_out (requires phone) */
+  initialAction?: 'opt_in' | 'opt_out' | null;
 };
 
 type ResultState = {
@@ -21,15 +25,21 @@ function getClient() {
   });
 }
 
-export function ConsentForm({ token, brandName }: Props) {
-  const [phone, setPhone] = useState('');
+export function ConsentForm({
+  token,
+  brandName,
+  initialPhone = '',
+  initialAction = null,
+}: Props) {
+  const [phone, setPhone] = useState(initialPhone);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<ResultState>(null);
+  const autoSubmitted = useRef(false);
 
-  const submit = async (action: 'opt_in' | 'opt_out') => {
+  const submit = async (action: 'opt_in' | 'opt_out', phoneOverride?: string) => {
     setError('');
-    const trimmed = phone.trim();
+    const trimmed = (phoneOverride ?? phone).trim();
     if (!trimmed) {
       setError('휴대폰 번호를 입력해 주세요.');
       return;
@@ -57,6 +67,15 @@ export function ConsentForm({ token, brandName }: Props) {
     }
   };
 
+  // One-tap: ?phone=…&action=opt_in|opt_out
+  useEffect(() => {
+    if (autoSubmitted.current) return;
+    if (!initialPhone || !initialAction) return;
+    autoSubmitted.current = true;
+    void submit(initialAction, initialPhone);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount for one-tap links
+  }, [initialPhone, initialAction]);
+
   if (result) {
     const optedIn = result.action === 'opt_in';
     return (
@@ -77,7 +96,8 @@ export function ConsentForm({ token, brandName }: Props) {
           className="mt-6 text-sm text-emerald-200 underline underline-offset-4"
           onClick={() => {
             setResult(null);
-            setPhone('');
+            setPhone(initialPhone || '');
+            autoSubmitted.current = true; // don't auto-fire again after manual reset
           }}
         >
           다른 번호로 다시 등록
@@ -86,8 +106,14 @@ export function ConsentForm({ token, brandName }: Props) {
     );
   }
 
+  const phoneLocked = Boolean(initialPhone);
+
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 p-6 sm:p-8">
+      {busy && initialAction ? (
+        <p className="mb-4 text-sm text-emerald-200/90">등록 처리 중…</p>
+      ) : null}
+
       <label className="block text-sm font-medium text-white/90" htmlFor="consent-phone">
         휴대폰 번호
       </label>
@@ -99,9 +125,15 @@ export function ConsentForm({ token, brandName }: Props) {
         placeholder="010-1234-5678"
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
-        disabled={busy}
-        className="mt-2 w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-base text-white outline-none ring-emerald-400/40 placeholder:text-white/35 focus:ring-2"
+        disabled={busy || phoneLocked}
+        readOnly={phoneLocked}
+        className="mt-2 w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-base text-white outline-none ring-emerald-400/40 placeholder:text-white/35 focus:ring-2 disabled:opacity-80"
       />
+      {phoneLocked ? (
+        <p className="mt-2 text-xs text-white/50">
+          문자 링크에서 번호가 전달되었습니다. 아래에서 동의 또는 거부를 선택하세요.
+        </p>
+      ) : null}
 
       {error ? (
         <p className="mt-3 text-sm text-rose-300" role="alert">

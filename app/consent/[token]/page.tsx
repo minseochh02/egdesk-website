@@ -46,12 +46,39 @@ async function loadLink(token: string): Promise<ConsentLink | null> {
   return data as ConsentLink;
 }
 
+function parseAction(raw: string | undefined): 'opt_in' | 'opt_out' | null {
+  const v = String(raw || '')
+    .trim()
+    .toLowerCase();
+  if (v === 'opt_in' || v === 'agree' || v === '동의') return 'opt_in';
+  if (v === 'opt_out' || v === 'deny' || v === '거절' || v === '거부') return 'opt_out';
+  return null;
+}
+
+function parsePhone(raw: string | undefined): string {
+  return String(raw || '').trim();
+}
+
 export default async function ConsentPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ token: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { token } = await params;
+  const sp = await searchParams;
+  const phoneParam = parsePhone(
+    typeof sp.phone === 'string' ? sp.phone : Array.isArray(sp.phone) ? sp.phone[0] : '',
+  );
+  const actionParam = parseAction(
+    typeof sp.action === 'string'
+      ? sp.action
+      : Array.isArray(sp.action)
+        ? sp.action[0]
+        : undefined,
+  );
+
   const link = token ? await loadLink(token) : null;
 
   return (
@@ -84,9 +111,17 @@ export default async function ConsentPage({
                 {link.brand_name || '사업자'}
               </h1>
               <p className="mt-3 text-sm leading-relaxed text-white/70">
-                아래 휴대폰 번호를 입력한 뒤, 광고성 문자 수신에{' '}
-                <strong className="text-white">동의</strong>하거나{' '}
-                <strong className="text-white">거부</strong>할 수 있습니다.
+                {phoneParam && actionParam
+                  ? '문자 링크로 열었습니다. 수신 동의/거부를 자동으로 등록합니다.'
+                  : phoneParam
+                    ? '번호가 확인되었습니다. 광고성 문자 수신에 동의하거나 거부해 주세요.'
+                    : (
+                      <>
+                        아래 휴대폰 번호를 입력한 뒤, 광고성 문자 수신에{' '}
+                        <strong className="text-white">동의</strong>하거나{' '}
+                        <strong className="text-white">거부</strong>할 수 있습니다.
+                      </>
+                    )}
                 {link.opt_out_phone ? (
                   <>
                     {' '}
@@ -97,7 +132,12 @@ export default async function ConsentPage({
               </p>
             </header>
 
-            <ConsentForm token={link.token} brandName={link.brand_name} />
+            <ConsentForm
+              token={link.token}
+              brandName={link.brand_name}
+              initialPhone={phoneParam}
+              initialAction={actionParam}
+            />
           </>
         )}
       </main>
