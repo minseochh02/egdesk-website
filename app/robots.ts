@@ -12,6 +12,7 @@ export default function robots(): MetadataRoute.Robots {
         '/app/',
         '/search/',
         '/auth/',
+        '/consent/',
       ],
     },
     sitemap: 'https://egdesk.cloud/sitemap.xml',
