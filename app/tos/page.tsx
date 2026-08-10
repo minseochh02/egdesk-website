@@ -407,10 +407,43 @@ export default function TermsOfService() {
               </div>
             </div>
 
+            {/* Payment, Subscriptions & Refunds */}
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-3">
+                <span className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg flex items-center justify-center text-sm">9</span>
+                Payment, Subscriptions & Refunds
+              </h2>
+              <div className="text-gray-300 space-y-4 pl-11">
+                <p>
+                  <strong className="text-white">EGDesk Pro</strong> is offered as a prepaid annual license. Depending on the payment method you choose, this is either a one-time annual charge (e.g. via PortOne / KG이니시스 card payment in KRW) with no automatic renewal, or a recurring annual subscription (e.g. via PayPal) that renews automatically until cancelled.
+                </p>
+                <p>
+                  <strong className="text-white">Refunds.</strong> Because EGDesk Pro unlocks digital software features immediately upon payment, refund requests are handled as follows:
+                </p>
+                <ul className="list-disc pl-6 space-y-2">
+                  <li>
+                    If you request a refund within <strong className="text-white">7 days</strong> of purchase and have not substantially used the Pro features unlocked by your payment, we will issue a full refund.
+                  </li>
+                  <li>
+                    After 7 days, or once the Pro features have been substantially used, refunds are not available except where required by the Act on Consumer Protection in Electronic Commerce (전자상거래 등에서의 소비자보호에 관한 법률) or other applicable law.
+                  </li>
+                  <li>
+                    Duplicate charges, failed activations, or billing errors on our part are corrected or refunded in full once verified.
+                  </li>
+                </ul>
+                <p>
+                  <strong className="text-white">Cancellation.</strong> You may stop using the Service at any time. For prepaid annual licenses, cancellation does not trigger a partial refund for the unused portion of the term except as described above. For recurring subscriptions (e.g. PayPal), cancelling stops future renewal charges; access continues until the end of the period you already paid for.
+                </p>
+                <p>
+                  To request a refund or cancellation, contact us using the information below with your order or payment ID.
+                </p>
+              </div>
+            </div>
+
             {/* Governing Law */}
             <div>
               <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-3">
-                <span className="w-8 h-8 bg-gradient-to-br from-teal-500 to-green-500 rounded-lg flex items-center justify-center text-sm">9</span>
+                <span className="w-8 h-8 bg-gradient-to-br from-teal-500 to-green-500 rounded-lg flex items-center justify-center text-sm">10</span>
                 Governing Law
               </h2>
               <div className="text-gray-300 space-y-4 pl-11">
@@ -423,7 +456,7 @@ export default function TermsOfService() {
             {/* Contact Information */}
             <div>
               <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-3">
-                <span className="w-8 h-8 bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg flex items-center justify-center text-sm">10</span>
+                <span className="w-8 h-8 bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg flex items-center justify-center text-sm">11</span>
                 Contact Information
               </h2>
               <div className="text-gray-300 pl-11">
@@ -449,6 +482,7 @@ export default function TermsOfService() {
                       </svg>
                       <span>대표자: 차민수</span>
                     </div>
+                    {/* TODO: add 통신판매업 신고번호 here once filed (required for card-payment PG review; see 정부24) */}
                     <div className="flex items-center gap-3">
                       <svg className="w-5 h-5 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
