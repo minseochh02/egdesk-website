@@ -12,6 +12,7 @@ type CheckoutConfig = {
   totalAmount: number;
   currency: string;
   customer: { fullName: string; email: string; phoneNumber: string };
+  customData?: Record<string, unknown>;
   completeUrl: string;
 };
 
@@ -111,6 +112,7 @@ export function PortoneCheckoutClient() {
         currency: cfg.currency || 'KRW',
         payMethod: 'CARD',
         customer: cfg.customer,
+        ...(cfg.customData ? { customData: cfg.customData } : {}),
       });
       // eslint-disable-next-line no-console
       console.log('[PortOne] requestPayment result:', payment);
