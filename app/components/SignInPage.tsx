@@ -163,11 +163,17 @@ export default function SignInPage() {
         </div>
 
         {/* Footer */}
-        <div className="mt-6 text-center">
+        <div className="mt-6 text-center space-y-3">
+          <Link
+            href="/auth/app-login"
+            className="inline-block text-sm text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            Signing in for the EGDesk desktop app →
+          </Link>
           <p className="text-xs text-zinc-500">
             By signing in, you agree to our Terms of Service and Privacy Policy
           </p>
-          <p className="text-xs text-zinc-600 mt-2">
+          <p className="text-xs text-zinc-600">
             Don't have access? Ask the server owner to add your email.
           </p>
         </div>
