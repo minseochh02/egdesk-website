@@ -183,7 +183,7 @@ export function PortoneCheckoutClient() {
       >
         <h1 style={{ fontSize: 20, margin: '0 0 8px' }}>EGDesk Pro</h1>
         <p style={{ margin: '0 0 16px', lineHeight: 1.5, color: '#444' }}>
-          카드로 연간 이용권을 결제합니다. (자동갱신 없음)
+          카드로 6개월 이용권을 결제합니다. (자동갱신 없음)
         </p>
         <div style={{ fontSize: 28, fontWeight: 700, marginBottom: 20 }}>
           {amountLabel || '불러오는 중…'}
