@@ -11,6 +11,8 @@ export interface MCPService {
   endpoints: {
     tools: string;
     call: string;
+    sse?: string;
+    batch?: string;
   };
   status: 'active' | 'inactive';
 }
