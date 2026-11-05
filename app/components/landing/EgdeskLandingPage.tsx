@@ -11,6 +11,8 @@ import { landingImage } from './landing-utils';
 
 const egdeskDownloadUrl = '/download/latest';
 const bankingAIDownloadUrl = '/download/internet-banking-ai/latest';
+const recorderDownloadUrl = '/download/recorder/latest';
+const oneclickDownloadUrl = '/download/oneclick/latest';
 
 const lineups = [
   {
@@ -242,6 +244,14 @@ export default function EgdeskLandingPage() {
               </a>
               <a href={bankingAIDownloadUrl} className="btn-secondary btn-download">
                 뱅킹AI 다운로드
+              </a>
+            </div>
+            <div className="banking-ai-extra-downloads" aria-label="기타 EGDesk 앱 다운로드">
+              <a href={recorderDownloadUrl} className="btn-tertiary btn-download">
+                Recorder 다운로드
+              </a>
+              <a href={oneclickDownloadUrl} className="btn-tertiary btn-download">
+                원클릭로그인 다운로드
               </a>
             </div>
           </div>
