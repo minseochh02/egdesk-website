@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
 import Link from 'next/link';
 import { Shield, Lock, Zap, Github, ArrowLeft } from 'lucide-react';
+import MobileInstallQr from './MobileInstallQr';
 
 export default function SignInPage() {
   const { signInWithGoogle, signInWithGithub } = useAuth();
@@ -111,6 +112,8 @@ export default function SignInPage() {
               )}
             </button>
           </div>
+
+          <MobileInstallQr />
 
           {/* Divider */}
           <div className="relative my-6">

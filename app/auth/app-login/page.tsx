@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { launchEgdeskApp } from '@/lib/app-login';
+import MobileInstallQr from '@/app/components/MobileInstallQr';
 
 type Provider = 'google' | 'github';
 
@@ -170,6 +171,10 @@ function AppLoginContent() {
               variant="github"
             />
           </div>
+        )}
+
+        {(effectiveStatus === 'login' || effectiveStatus === 'signing-in') && (
+          <MobileInstallQr compact />
         )}
 
         {(effectiveStatus === 'ready' || effectiveStatus === 'launched') && user && (
