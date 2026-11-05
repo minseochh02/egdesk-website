@@ -214,9 +214,185 @@ export const BANKING_PRODUCT_CARD: LandingProductCardConfig = {
   tags: ['#경리업무', '#소상공인', '#홈택스', '#엑셀'],
 };
 
+export const SHEETBOT_PRODUCT: EgdeskProductAppConfig = {
+  slug: 'sheetbot',
+  activeNav: 'sheetbot',
+  pageUrl: 'https://egdesk.cloud/sheetbot',
+  downloadUrl: 'https://sheetbot.cloud',
+  downloadLabel: 'sheetbot.cloud 시작하기',
+  externalPrimary: true,
+  iconFile: 'icon-sheetbot.svg',
+  badge: 'SheetBot · sheetbot.cloud',
+  sectionThemeClass: 'product-app-theme--sheetbot',
+  metadataTitle: 'SheetBot (시트봇) | 구글 시트 AI 자동화 SaaS',
+  metadataDescription:
+    '구글 스프레드시트와 스마트폰을 연결하는 AI·GAS 자동화 클라우드. 시트 래핑, AI 사이드바, 0원 SMS 에이전트를 제공합니다.',
+  softwareName: 'SheetBot (시트봇)',
+  softwareAlternateName: 'sheetbot.cloud',
+  heroTitleLine1: '구글 시트 업무를',
+  heroTitleHighlight: 'AI와 스마트폰',
+  heroTitleLine2: '으로 자동화',
+  heroDescription:
+    'SheetBot은 스프레드시트 래핑, AI 코파일럿, 드라이브 문서 자동 기입, 스마트폰 0원 SMS 연동까지 하나의 클라우드에서 제공하는 자동화 SaaS입니다.',
+  summaryLabel: 'Sheets + Mobile Cloud',
+  summaryTitle: '시트 안에서 바로 쓰는 자동화 플랫폼',
+  checklist: [
+    '원클릭 시트 래핑(Wrap) 및 AI 브릿지',
+    '시트 내 AI 사이드바·토큰 충전',
+    '드라이브 문서 AI 분류·수불부 기입',
+    'Android 에이전트 0원 SMS·입금 감지',
+  ],
+  featuresTitle: 'SheetBot 핵심 기능',
+  featuresSubtitle: 'sheetbot.cloud에서 회원가입 후 구글 계정과 연동해 사용합니다.',
+  features: [
+    {
+      title: '시트 래핑 & 자동화',
+      description: 'UserAutomation.gs 갱신과 AI 브릿지로 시트 업무를 코드 없이 확장합니다.',
+    },
+    {
+      title: 'AI 사이드바',
+      description: '스프레드시트 안에서 질의·충전·자동화 실행을 한 화면에서 처리합니다.',
+    },
+    {
+      title: '모바일 에이전트',
+      description: '스마트폰과 연동해 SMS 발송·수신 기록, 입금 감지 등 실무 알림을 자동화합니다.',
+    },
+  ],
+  infoTitle: '운영 및 연동',
+  infoSubtitle: 'EGDesk 호스팅·터널 인프라 위에서 운영되며, 공식 서비스는 sheetbot.cloud에서 제공됩니다.',
+  infoCards: [
+    {
+      title: '공식 도메인',
+      description: '로그인·결제·에이전트 페어링은 https://sheetbot.cloud 를 사용합니다.',
+    },
+    {
+      title: '구글 Workspace',
+      description: '스프레드시트·드라이브·Apps Script와 OAuth 기반으로 연동합니다.',
+    },
+    {
+      title: 'EGDesk 생태계',
+      description: 'MCP·터널·호스팅과 같은 QUUS/EGDesk 인프라 스택을 공유합니다.',
+    },
+  ],
+  faq: [
+    {
+      question: 'EGDesk 데스크톱 앱과 다른가요?',
+      answer:
+        'SheetBot은 sheetbot.cloud 웹 SaaS입니다. EGDesk Desktop은 별도 제품이며, 인프라·계정 생태계는 연계될 수 있습니다.',
+    },
+    {
+      question: '모바일 에이전트 APK는 어디서 받나요?',
+      answer:
+        'sheetbot.cloud 대시보드의 에이전트 메뉴에서 QR·다운로드 안내를 확인하세요. 버전은 서버 API로 배포됩니다.',
+    },
+    {
+      question: 'FileToSheet와 관계는?',
+      answer:
+        'FileToSheet는 모바일 촬영·인박스 직결 적재용 별도 클라우드(filetosheet.cloud)이며, SheetBot과 연동 시나리오가 있습니다.',
+    },
+  ],
+  contactTitle: 'SheetBot 도입 상담',
+  contactSubtitle: '시트 자동화 범위와 에이전트 사용 여부를 남겨 주시면 안내드립니다.',
+  contactProductName: 'SheetBot (sheetbot.cloud)',
+  contactStorageKey: 'egdesk_sheetbot_latest_inquiry',
+  contactScopeLabel: '희망 자동화 범위',
+  tags: ['#구글시트', '#GAS', '#AI', '#SMS에이전트'],
+  panelStatus: 'Cloud SaaS',
+  panelTitle: '[SheetBot] 핵심 기능',
+};
+
+export const FILETOSHEET_PRODUCT: EgdeskProductAppConfig = {
+  slug: 'filetosheet',
+  activeNav: 'filetosheet',
+  pageUrl: 'https://egdesk.cloud/filetosheet',
+  downloadUrl: 'https://filetosheet.cloud',
+  downloadLabel: 'filetosheet.cloud 시작하기',
+  externalPrimary: true,
+  iconFile: 'icon-filetosheet.svg',
+  badge: 'FileToSheet · filetosheet.cloud',
+  sectionThemeClass: 'product-app-theme--filetosheet',
+  metadataTitle: 'FileToSheet | 모바일→시트 직결 적재',
+  metadataDescription:
+    '스마트폰 촬영·문자 데이터를 구글 드라이브/시트를 거치지 않고 filetosheet.cloud 프로젝트 시트에 webhook으로 적재합니다.',
+  softwareName: 'FileToSheet',
+  softwareAlternateName: 'filetosheet.cloud',
+  heroTitleLine1: '모바일에서 찍은 자료를',
+  heroTitleHighlight: '시트에 바로',
+  heroTitleLine2: '적재',
+  heroDescription:
+    'FileToSheet는 영수증·발주서·명함·문자 데이터를 filetosheet.cloud의 대상 시트로 직결 전송하는 클라우드 서비스입니다. QR 페어링으로 모바일 앱과 연동합니다.',
+  summaryLabel: 'Mobile Inbox → Sheet',
+  summaryTitle: '드라이브 우회, 웹훅 직결 적재',
+  checklist: [
+    '프로젝트·시트별 inbox webhook',
+    '모바일 QR 페어링 연동',
+    '영수증·문서·문자 데이터 수신',
+    'SheetBot 모바일 에이전트와 연동',
+  ],
+  featuresTitle: 'FileToSheet 핵심 기능',
+  featuresSubtitle: 'filetosheet.cloud에서 프로젝트를 만든 뒤 모바일 연동 QR로 페어링합니다.',
+  features: [
+    {
+      title: 'Inbox Webhook',
+      description: '/api/inbox/* 로 촬영·추출 데이터를 대상 시트에 실시간 반영합니다.',
+    },
+    {
+      title: 'QR 모바일 연동',
+      description: '웹 [모바일 연동] QR에 service·project·sheet 메타를 담아 앱과 페어링합니다.',
+    },
+    {
+      title: 'SheetBot Agent 연동',
+      description: '시트봇 모바일 에이전트에서 FileToSheet 모드로 동일 파이프라인을 사용할 수 있습니다.',
+    },
+  ],
+  infoTitle: '도입 시 확인 사항',
+  infoSubtitle: '공식 서비스·회원가입·프로젝트 생성은 filetosheet.cloud 에서 진행합니다.',
+  infoCards: [
+    {
+      title: '공식 도메인',
+      description: 'https://filetosheet.cloud 에서 프로젝트와 inbox URL을 발급합니다.',
+    },
+    {
+      title: '인증 SMS',
+      description: '회원가입·복구 SMS는 SheetBot Manager SMS Bridge와 연동될 수 있습니다.',
+    },
+    {
+      title: '데이터 경로',
+      description: '모바일 → FileToSheet 서버 → 물리 DB/시트 적재 (드라이브 동기화 없이 직결).',
+    },
+  ],
+  faq: [
+    {
+      question: 'SheetBot과 무엇이 다른가요?',
+      answer:
+        'SheetBot은 시트 전반 AI·GAS 자동화 SaaS이고, FileToSheet는 모바일→시트 직결 inbox에 특화된 서비스입니다.',
+    },
+    {
+      question: '어떤 앱으로 전송하나요?',
+      answer:
+        'SheetBot 모바일 에이전트(FileToSheet 모드) 또는 filetosheet.cloud QR로 페어링한 앱에서 전송합니다.',
+    },
+    {
+      question: 'EGDesk에서 설정하나요?',
+      answer:
+        '운영·가입은 filetosheet.cloud에서 하며, EGDesk 사이트는 소개·상담·생태계 안내용 페이지입니다.',
+    },
+  ],
+  contactTitle: 'FileToSheet 도입 상담',
+  contactSubtitle: '적재할 시트 종류와 모바일 사용 인원을 남겨 주시면 연동 방법을 안내드립니다.',
+  contactProductName: 'FileToSheet (filetosheet.cloud)',
+  contactStorageKey: 'egdesk_filetosheet_latest_inquiry',
+  contactScopeLabel: '희망 inbox / 시트 범위',
+  tags: ['#모바일적재', '#웹훅', '#영수증', '#inbox'],
+  panelStatus: 'Cloud Inbox',
+  panelTitle: '[FileToSheet] 핵심 기능',
+};
+
 /** Landing grid — each card links to its own product page. */
 export const LANDING_EGDESK_APP_CARDS: LandingProductCardConfig[] = [
   BANKING_PRODUCT_CARD,
   productToLandingCard(RECORDER_PRODUCT),
   productToLandingCard(ONECLICK_PRODUCT),
+  productToLandingCard(SHEETBOT_PRODUCT),
+  productToLandingCard(FILETOSHEET_PRODUCT),
 ];

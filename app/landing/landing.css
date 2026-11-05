@@ -712,7 +712,7 @@
 
 .landing-page .product-apps-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1.5rem;
     margin-bottom: 2rem;
 }
@@ -818,6 +818,26 @@
 
 .landing-page .product-app-theme--oneclick .product-app-card__headline {
     color: #7dd3fc;
+}
+
+.landing-page .product-app-theme--sheetbot .product-app-card__headline {
+    color: #5eead4;
+}
+
+.landing-page .product-app-theme--filetosheet .product-app-card__headline {
+    color: #a5b4fc;
+}
+
+.landing-page .product-app-theme--sheetbot .hero-title span {
+    background: linear-gradient(135deg, #2dd4bf, #22c55e);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.landing-page .product-app-theme--filetosheet .hero-title span {
+    background: linear-gradient(135deg, #818cf8, #c084fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 @media (max-width: 960px) {

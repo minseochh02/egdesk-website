@@ -1,0 +1,21 @@
+<svg width="1024" height="1024" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="fts-bg" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#0f0a1e"/>
+    </linearGradient>
+    <clipPath id="fts-rounded"><rect width="200" height="200" rx="46"/></clipPath>
+  </defs>
+  <g clip-path="url(#fts-rounded)">
+    <rect width="200" height="200" fill="url(#fts-bg)"/>
+    <rect x="48" y="52" width="56" height="72" rx="12" fill="#312e81" stroke="#a5b4fc" stroke-width="2"/>
+    <circle cx="76" cy="72" r="10" fill="#6366f1"/>
+    <rect x="60" y="92" width="32" height="6" rx="3" fill="#c7d2fe"/>
+    <path d="M108 88 L148 68 L168 88 L128 108 Z" fill="#818cf8"/>
+    <rect x="108" y="108" width="52" height="36" rx="6" fill="#4338ca"/>
+    <rect x="116" y="118" width="36" height="4" rx="2" fill="#e0e7ff"/>
+    <rect x="116" y="128" width="28" height="4" rx="2" fill="#e0e7ff" opacity="0.7"/>
+    <text x="100" y="168" text-anchor="middle" font-family="'SF Pro Display',sans-serif" font-size="14" font-weight="700" fill="#EAEFFF">FileToSheet</text>
+    <text x="100" y="186" text-anchor="middle" font-family="'SF Pro Display',sans-serif" font-size="10" font-weight="600" fill="#a5b4fc">filetosheet.cloud</text>
+  </g>
+</svg>

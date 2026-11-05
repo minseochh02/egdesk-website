@@ -10,8 +10,8 @@ export default function LandingProductAppsGrid() {
           <span className="badge purple">EGDesk Software</span>
           <h2 className="section-title">데스크톱 업무 자동화 앱</h2>
           <p className="section-subtitle">
-            인터넷뱅킹AI, Recorder, 원클릭로그인 — 제품별 상세 소개와 다운로드는 각 페이지에서
-            확인할 수 있습니다.
+            데스크톱 앱과 클라우드 서비스 — 제품별 소개는 각 페이지에서, 바로 이용은 공식 사이트에서
+            시작할 수 있습니다.
           </p>
         </div>
 
@@ -41,7 +41,13 @@ export default function LandingProductAppsGrid() {
                 <Link href={app.pagePath} className="btn-primary product-app-card__link">
                   제품 페이지
                 </Link>
-                <a href={app.downloadUrl} className="btn-secondary btn-download">
+                <a
+                  href={app.downloadUrl}
+                  className="btn-secondary btn-download"
+                  {...(app.downloadUrl.startsWith('http')
+                    ? { target: '_blank', rel: 'noreferrer' }
+                    : {})}
+                >
                   {app.downloadLabel}
                 </a>
               </div>

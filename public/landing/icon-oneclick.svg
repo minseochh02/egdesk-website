@@ -1,8 +1,8 @@
 <svg width="1024" height="1024" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="oc-bg" x1="0.2" y1="0" x2="0.8" y2="1">
-      <stop offset="0%" stop-color="#142038"/>
-      <stop offset="100%" stop-color="#0a1020"/>
+    <linearGradient id="oc-bg" x1="0.3" y1="0" x2="0.7" y2="1">
+      <stop offset="0%" stop-color="#5b21b6"/>
+      <stop offset="100%" stop-color="#1e1b4b"/>
     </linearGradient>
     <clipPath id="oc-rounded">
       <rect width="200" height="200" rx="46"/>
@@ -10,10 +10,17 @@
   </defs>
   <g clip-path="url(#oc-rounded)">
     <rect width="200" height="200" fill="url(#oc-bg)"/>
-    <path d="M58 118 L118 78 L142 98 L82 138 Z" fill="#4facfe"/>
-    <path d="M118 78 L142 58 L166 78 L142 98 Z" fill="#00f2fe"/>
-    <circle cx="72" cy="126" r="10" fill="#EAEFFF"/>
-    <text x="100" y="162" text-anchor="middle" font-family="'Apple SD Gothic Neo','Malgun Gothic',sans-serif" font-size="16" font-weight="700" fill="#EAEFFF">Ðt­</text>
-    <text x="100" y="182" text-anchor="middle" font-family="'Apple SD Gothic Neo','Malgun Gothic',sans-serif" font-size="14" font-weight="700" fill="#5FE6E6">\øx</text>
+    <rect x="58" y="32" width="22" height="92" rx="9" fill="#C4B5FD"/>
+    <rect x="74" y="38" width="72" height="22" rx="8" fill="#EDE9FE"/>
+    <rect x="74" y="73" width="56" height="22" rx="8" fill="#EDE9FE"/>
+    <rect x="74" y="108" width="72" height="22" rx="8" fill="#EDE9FE"/>
+    <circle cx="90" cy="49" r="3.6" fill="#A78BFA"/>
+    <circle cx="103" cy="49" r="3.6" fill="#A78BFA"/>
+    <circle cx="90" cy="84" r="3.6" fill="#A78BFA"/>
+    <circle cx="103" cy="84" r="3.6" fill="#A78BFA"/>
+    <circle cx="90" cy="119" r="3.6" fill="#A78BFA"/>
+    <circle cx="103" cy="119" r="3.6" fill="#A78BFA"/>
+    <text x="100" y="168" text-anchor="middle" font-family="'Apple SD Gothic Neo','Malgun Gothic',sans-serif" font-size="14" font-weight="700" fill="#EDE9FE" letter-spacing="0.2">&#xC6D0;&#xD074;&#xB9AD;</text>
+    <text x="100" y="186" text-anchor="middle" font-family="'SF Pro Display','Helvetica Neue',sans-serif" font-size="13" font-weight="700" fill="#A78BFA" letter-spacing="0.5">LOGIN</text>
   </g>
 </svg>

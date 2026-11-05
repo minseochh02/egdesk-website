@@ -11,6 +11,8 @@ export type EgdeskProductAppConfig = {
   pageUrl: string;
   downloadUrl: string;
   downloadLabel: string;
+  /** When true, primary CTA opens `downloadUrl` in a new tab (cloud products). */
+  externalPrimary?: boolean;
   iconFile: string;
   badge: string;
   sectionThemeClass: string;
@@ -96,11 +98,17 @@ export default function EgdeskProductAppPage({ config }: EgdeskProductAppPagePro
           </h1>
           <p className="hero-desc">{config.heroDescription}</p>
           <div className="hero-actions">
-            <a href={config.downloadUrl} className="btn-secondary btn-download">
+            <a
+              href={config.downloadUrl}
+              className="btn-secondary btn-download"
+              {...(config.externalPrimary || config.downloadUrl.startsWith('http')
+                ? { target: '_blank', rel: 'noreferrer' }
+                : {})}
+            >
               {config.downloadLabel}
             </a>
-            <Link href="/#home" className="btn-primary">
-              EGDesk 홈으로
+            <Link href="/#egdesk-apps" className="btn-primary">
+              EGDesk 제품 목록
             </Link>
           </div>
         </div>

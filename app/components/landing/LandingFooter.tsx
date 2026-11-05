@@ -35,6 +35,12 @@ export default function LandingFooter() {
               <Link href="/oneclick">원클릭로그인</Link>
             </li>
             <li>
+              <Link href="/sheetbot">SheetBot</Link>
+            </li>
+            <li>
+              <Link href="/filetosheet">FileToSheet</Link>
+            </li>
+            <li>
               <Link href="/internet-banking-ai#contact">인터넷뱅킹AI 상담</Link>
             </li>
             <li>
