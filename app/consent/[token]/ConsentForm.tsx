@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
 
 type Props = {
   token: string;
@@ -17,12 +16,59 @@ type ResultState = {
   phone: string;
 } | null;
 
-function getClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  return createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
+function consentRecordErrorMessage(status: number): string {
+  if (status === 429) {
+    return '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.';
+  }
+  return '처리에 실패했습니다. 잠시 후 다시 시도해 주세요.';
+}
+
+async function postSmsConsentRecord(input: {
+  token: string;
+  phone: string;
+  action: 'opt_in' | 'opt_out';
+}): Promise<
+  | { ok: true; phoneNormalized: string }
+  | { ok: false; status: number; message: string }
+> {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '');
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!base || !anon) {
+    return { ok: false, status: 0, message: '처리에 실패했습니다. 잠시 후 다시 시도해 주세요.' };
+  }
+
+  const res = await fetch(`${base}/functions/v1/sms-consent-record`, {
+    method: 'POST',
+    headers: {
+      apikey: anon,
+      Authorization: `Bearer ${anon}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      token: input.token,
+      phone: input.phone,
+      action: input.action,
+    }),
   });
+
+  const data = (await res.json().catch(() => ({}))) as {
+    success?: boolean;
+    phoneNormalized?: string;
+    error?: string;
+  };
+
+  if (res.ok && data.success) {
+    return {
+      ok: true,
+      phoneNormalized: data.phoneNormalized || input.phone,
+    };
+  }
+
+  return {
+    ok: false,
+    status: res.status,
+    message: consentRecordErrorMessage(res.status),
+  };
 }
 
 export function ConsentForm({
@@ -46,20 +92,16 @@ export function ConsentForm({
     }
     setBusy(true);
     try {
-      const supabase = getClient();
-      const { data, error: rpcError } = await supabase.rpc('record_sms_consent', {
-        p_token: token,
-        p_phone: trimmed,
-        p_action: action,
-        p_user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+      const result = await postSmsConsentRecord({
+        token,
+        phone: trimmed,
+        action,
       });
-      if (rpcError) {
-        setError(rpcError.message || '처리에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+      if (!result.ok) {
+        setError(result.message);
         return;
       }
-      const phoneNormalized =
-        (data as { phoneNormalized?: string } | null)?.phoneNormalized || trimmed;
-      setResult({ action, phone: phoneNormalized });
+      setResult({ action, phone: result.phoneNormalized });
     } catch (err) {
       setError(err instanceof Error ? err.message : '처리에 실패했습니다.');
     } finally {

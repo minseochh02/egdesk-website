@@ -22,6 +22,8 @@ GEMINI_API_KEY=your-gemini-api-key
 3. Copy the **Project URL** → use as `NEXT_PUBLIC_SUPABASE_URL`
 4. Copy the **anon/public** key → use as `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
+These variables are required for **`/consent/[token]`** (marketing SMS opt-in/out), which calls the **`sms-consent-record`** edge function — not the public `record_sms_consent` RPC.
+
 ## MCP Server Configuration
 
 1. `NEXT_PUBLIC_TUNNEL_SERVICE_URL` - The URL of your tunnel service (e.g., https://tunneling-service.onrender.com)
