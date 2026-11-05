@@ -288,7 +288,7 @@ export const SHEETBOT_PRODUCT: EgdeskProductAppConfig = {
     {
       question: 'FileToSheet와 관계는?',
       answer:
-        'FileToSheet는 모바일 촬영·인박스 직결 적재용 별도 클라우드(filetosheet.cloud)이며, SheetBot과 연동 시나리오가 있습니다.',
+        'FileToSheet는 모바일 촬영·인박스 직결 적재용 별도 클라우드(file2sheet.cloud)이며, SheetBot과 연동 시나리오가 있습니다.',
     },
   ],
   contactTitle: 'SheetBot 도입 상담',
@@ -305,22 +305,22 @@ export const FILETOSHEET_PRODUCT: EgdeskProductAppConfig = {
   slug: 'filetosheet',
   activeNav: 'filetosheet',
   pageUrl: 'https://egdesk.cloud/filetosheet',
-  downloadUrl: 'https://filetosheet.cloud',
-  downloadLabel: 'filetosheet.cloud 시작하기',
+  downloadUrl: 'https://file2sheet.cloud',
+  downloadLabel: 'file2sheet.cloud 시작하기',
   externalPrimary: true,
   iconFile: 'icon-filetosheet.svg',
-  badge: 'FileToSheet · filetosheet.cloud',
+  badge: 'FileToSheet · file2sheet.cloud',
   sectionThemeClass: 'product-app-theme--filetosheet',
   metadataTitle: 'FileToSheet | 모바일→시트 직결 적재',
   metadataDescription:
-    '스마트폰 촬영·문자 데이터를 구글 드라이브/시트를 거치지 않고 filetosheet.cloud 프로젝트 시트에 webhook으로 적재합니다.',
+    '스마트폰 촬영·문자 데이터를 구글 드라이브/시트를 거치지 않고 file2sheet.cloud 프로젝트 시트에 webhook으로 적재합니다.',
   softwareName: 'FileToSheet',
-  softwareAlternateName: 'filetosheet.cloud',
+  softwareAlternateName: 'file2sheet.cloud',
   heroTitleLine1: '모바일에서 찍은 자료를',
   heroTitleHighlight: '시트에 바로',
   heroTitleLine2: '적재',
   heroDescription:
-    'FileToSheet는 영수증·발주서·명함·문자 데이터를 filetosheet.cloud의 대상 시트로 직결 전송하는 클라우드 서비스입니다. QR 페어링으로 모바일 앱과 연동합니다.',
+    'FileToSheet는 영수증·발주서·명함·문자 데이터를 file2sheet.cloud의 대상 시트로 직결 전송하는 클라우드 서비스입니다. QR 페어링으로 모바일 앱과 연동합니다.',
   summaryLabel: 'Mobile Inbox → Sheet',
   summaryTitle: '드라이브 우회, 웹훅 직결 적재',
   checklist: [
@@ -330,7 +330,7 @@ export const FILETOSHEET_PRODUCT: EgdeskProductAppConfig = {
     'SheetBot 모바일 에이전트와 연동',
   ],
   featuresTitle: 'FileToSheet 핵심 기능',
-  featuresSubtitle: 'filetosheet.cloud에서 프로젝트를 만든 뒤 모바일 연동 QR로 페어링합니다.',
+  featuresSubtitle: 'file2sheet.cloud에서 프로젝트를 만든 뒤 모바일 연동 QR로 페어링합니다.',
   features: [
     {
       title: 'Inbox Webhook',
@@ -346,11 +346,11 @@ export const FILETOSHEET_PRODUCT: EgdeskProductAppConfig = {
     },
   ],
   infoTitle: '도입 시 확인 사항',
-  infoSubtitle: '공식 서비스·회원가입·프로젝트 생성은 filetosheet.cloud 에서 진행합니다.',
+  infoSubtitle: '공식 서비스·회원가입·프로젝트 생성은 file2sheet.cloud 에서 진행합니다.',
   infoCards: [
     {
       title: '공식 도메인',
-      description: 'https://filetosheet.cloud 에서 프로젝트와 inbox URL을 발급합니다.',
+      description: 'https://file2sheet.cloud 에서 프로젝트와 inbox URL을 발급합니다.',
     },
     {
       title: '인증 SMS',
@@ -370,17 +370,17 @@ export const FILETOSHEET_PRODUCT: EgdeskProductAppConfig = {
     {
       question: '어떤 앱으로 전송하나요?',
       answer:
-        'SheetBot 모바일 에이전트(FileToSheet 모드) 또는 filetosheet.cloud QR로 페어링한 앱에서 전송합니다.',
+        'SheetBot 모바일 에이전트(FileToSheet 모드) 또는 file2sheet.cloud QR로 페어링한 앱에서 전송합니다.',
     },
     {
       question: 'EGDesk에서 설정하나요?',
       answer:
-        '운영·가입은 filetosheet.cloud에서 하며, EGDesk 사이트는 소개·상담·생태계 안내용 페이지입니다.',
+        '운영·가입은 file2sheet.cloud에서 하며, EGDesk 사이트는 소개·상담·생태계 안내용 페이지입니다.',
     },
   ],
   contactTitle: 'FileToSheet 도입 상담',
   contactSubtitle: '적재할 시트 종류와 모바일 사용 인원을 남겨 주시면 연동 방법을 안내드립니다.',
-  contactProductName: 'FileToSheet (filetosheet.cloud)',
+  contactProductName: 'FileToSheet (file2sheet.cloud)',
   contactStorageKey: 'egdesk_filetosheet_latest_inquiry',
   contactScopeLabel: '희망 inbox / 시트 범위',
   tags: ['#모바일적재', '#웹훅', '#영수증', '#inbox'],

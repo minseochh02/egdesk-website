@@ -16,6 +16,6 @@
     <rect x="116" y="118" width="36" height="4" rx="2" fill="#e0e7ff"/>
     <rect x="116" y="128" width="28" height="4" rx="2" fill="#e0e7ff" opacity="0.7"/>
     <text x="100" y="168" text-anchor="middle" font-family="'SF Pro Display',sans-serif" font-size="14" font-weight="700" fill="#EAEFFF">FileToSheet</text>
-    <text x="100" y="186" text-anchor="middle" font-family="'SF Pro Display',sans-serif" font-size="10" font-weight="600" fill="#a5b4fc">filetosheet.cloud</text>
+    <text x="100" y="186" text-anchor="middle" font-family="'SF Pro Display',sans-serif" font-size="10" font-weight="600" fill="#a5b4fc">file2sheet.cloud</text>
   </g>
 </svg>
