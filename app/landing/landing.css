@@ -828,6 +828,16 @@
     color: #a5b4fc;
 }
 
+.landing-page .product-app-theme--mobile .product-app-card__headline {
+    color: #5eead4;
+}
+
+.landing-page .product-app-theme--mobile .hero-title span {
+    background: linear-gradient(135deg, #2dd4bf, #22d3ee);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
 .landing-page .product-app-theme--sheetbot .hero-title span {
     background: linear-gradient(135deg, #2dd4bf, #22c55e);
     -webkit-background-clip: text;

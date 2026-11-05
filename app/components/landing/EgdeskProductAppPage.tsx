@@ -1,6 +1,7 @@
 import LandingFooter from '@/app/components/landing/LandingFooter';
 import LandingHeader, { type LandingNavKey } from '@/app/components/landing/LandingHeader';
 import ProductAppContactForm from '@/app/components/landing/ProductAppContactForm';
+import MobileInstallQr from '@/app/components/MobileInstallQr';
 import { landingImage } from '@/app/components/landing/landing-utils';
 import '@/app/landing/landing.css';
 import Link from 'next/link';
@@ -42,6 +43,10 @@ export type EgdeskProductAppConfig = {
   tags: string[];
   panelStatus: string;
   panelTitle: string;
+  /** Defaults to Windows, macOS for desktop apps. */
+  operatingSystem?: string;
+  /** Show APK install QR block on the product hero summary card. */
+  showMobileInstallQr?: boolean;
 };
 
 type EgdeskProductAppPageProps = {
@@ -55,7 +60,7 @@ export default function EgdeskProductAppPage({ config }: EgdeskProductAppPagePro
     name: config.softwareName,
     alternateName: config.softwareAlternateName,
     applicationCategory: 'BusinessApplication',
-    operatingSystem: 'Windows, macOS',
+    operatingSystem: config.operatingSystem ?? 'Windows, macOS',
     description: config.metadataDescription,
     url: config.pageUrl,
     publisher: {
@@ -120,6 +125,7 @@ export default function EgdeskProductAppPage({ config }: EgdeskProductAppPagePro
               <li key={item}>{item}</li>
             ))}
           </ul>
+          {config.showMobileInstallQr ? <MobileInstallQr compact /> : null}
         </div>
       </section>
 

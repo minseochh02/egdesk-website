@@ -388,11 +388,99 @@ export const FILETOSHEET_PRODUCT: EgdeskProductAppConfig = {
   panelTitle: '[FileToSheet] 핵심 기능',
 };
 
+export const MOBILE_PRODUCT: EgdeskProductAppConfig = {
+  slug: 'mobile',
+  activeNav: 'mobile',
+  pageUrl: 'https://egdesk.cloud/mobile',
+  downloadUrl: '/download/mobile/latest',
+  downloadLabel: 'Android APK 다운로드',
+  iconFile: 'icon-mobile.svg',
+  badge: 'EGDesk Mobile',
+  sectionThemeClass: 'product-app-theme--mobile',
+  operatingSystem: 'Android',
+  showMobileInstallQr: true,
+  metadataTitle: 'EGDesk Mobile | Android companion app',
+  metadataDescription:
+    '스마트폰에서 EGDesk 계정으로 로그인하고, 데스크톱 로그인 승인·MCP 연동을 지원하는 EGDesk Mobile Android 앱입니다.',
+  softwareName: 'EGDesk Mobile',
+  softwareAlternateName: 'EGDesk Mobile Android',
+  heroTitleLine1: '데스크톱 EGDesk와',
+  heroTitleHighlight: '스마트폰',
+  heroTitleLine2: '을 연결',
+  heroDescription:
+    'EGDesk Mobile은 Android APK로 설치합니다. QR로 최신 빌드를 받은 뒤, 모바일 앱 또는 웹 로그인 화면과 같은 계정으로 데스크톱 접속을 승인할 수 있습니다.',
+  summaryLabel: 'Android Install',
+  summaryTitle: 'QR 스캔 또는 링크로 APK 설치',
+  checklist: [
+    'GitHub Releases 최신 APK 자동 연결',
+    '웹 로그인·앱 로그인과 동일 계정',
+    '데스크톱 로그인 승인(Phase 3)',
+    'Android 전용 (iOS 추후)',
+  ],
+  featuresTitle: 'EGDesk Mobile 핵심 기능',
+  featuresSubtitle: '설치 후 EGDesk Desktop·웹과 같은 Supabase 계정으로 사용합니다.',
+  features: [
+    {
+      title: 'APK 설치',
+      description:
+        '이 페이지 또는 로그인 화면의 QR로 최신 Android APK를 내려받습니다. 버전은 egdesk-mobile-releases에서 관리합니다.',
+    },
+    {
+      title: '계정 연동',
+      description: 'Google·GitHub 등 EGDesk 웹과 동일한 방식으로 모바일에서 로그인합니다.',
+    },
+    {
+      title: '데스크톱 승인',
+      description: '데스크톱 로그인·기기 등록 흐름에서 휴대폰으로 승인하는 시나리오를 지원합니다.',
+    },
+  ],
+  infoTitle: '설치 전 확인',
+  infoSubtitle: 'Android에서 “알 수 없는 앱” 설치 허용이 필요할 수 있습니다. 사내 MDM 정책을 먼저 확인하세요.',
+  infoCards: [
+    {
+      title: '지원 OS',
+      description: '현재 Android APK만 배포합니다. iOS는 App Store 정책에 맞춰 별도 일정으로 안내합니다.',
+    },
+    {
+      title: '릴리스 채널',
+      description: 'minseochh02/egdesk-mobile-releases의 latest.json·APK가 /download/mobile/latest 로 연결됩니다.',
+    },
+    {
+      title: '데스크톱과 함께',
+      description: 'EGDesk Desktop, Recorder, 원클릭로그인 등과 같은 계정·인프라 생태계 위에서 동작합니다.',
+    },
+  ],
+  faq: [
+    {
+      question: 'iPhone에서 설치할 수 있나요?',
+      answer: '현재 공개 APK는 Android용입니다. iOS는 TestFlight·App Store 경로를 검토 중입니다.',
+    },
+    {
+      question: 'QR은 어디서 보나요?',
+      answer: '이 제품 페이지, 웹 로그인(/login), 앱 로그인(/auth/app-login)에 동일한 설치 QR이 표시됩니다.',
+    },
+    {
+      question: 'SheetBot 에이전트 APK와 다른가요?',
+      answer:
+        'EGDesk Mobile은 EGDesk 계정·데스크톱 연동용입니다. SheetBot·FileToSheet 에이전트는 각 클라우드 대시보드에서 별도로 받습니다.',
+    },
+  ],
+  contactTitle: 'EGDesk Mobile 문의',
+  contactSubtitle: '배포 채널·기기 OS·사용 인원을 남겨 주시면 설치 방법을 안내드립니다.',
+  contactProductName: 'EGDesk Mobile (Android)',
+  contactStorageKey: 'egdesk_mobile_latest_inquiry',
+  contactScopeLabel: 'Android 기기 / 사용 목적',
+  tags: ['#Android', '#APK', '#모바일로그인', '#Phase3'],
+  panelStatus: 'Mobile Companion',
+  panelTitle: '[EGDesk Mobile] 설치',
+};
+
 /** Landing grid — each card links to its own product page. */
 export const LANDING_EGDESK_APP_CARDS: LandingProductCardConfig[] = [
   BANKING_PRODUCT_CARD,
   productToLandingCard(RECORDER_PRODUCT),
   productToLandingCard(ONECLICK_PRODUCT),
+  productToLandingCard(MOBILE_PRODUCT),
   productToLandingCard(SHEETBOT_PRODUCT),
   productToLandingCard(FILETOSHEET_PRODUCT),
 ];

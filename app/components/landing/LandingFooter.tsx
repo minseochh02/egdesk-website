@@ -35,6 +35,9 @@ export default function LandingFooter() {
               <Link href="/oneclick">원클릭로그인</Link>
             </li>
             <li>
+              <Link href="/mobile">EGDesk Mobile</Link>
+            </li>
+            <li>
               <Link href="/sheetbot">SheetBot</Link>
             </li>
             <li>

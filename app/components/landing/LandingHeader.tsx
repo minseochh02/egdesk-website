@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-export type LandingNavKey = 'home' | 'detail' | 'banking' | 'recorder' | 'oneclick' | 'sheetbot' | 'filetosheet';
+export type LandingNavKey = 'home' | 'detail' | 'banking' | 'recorder' | 'oneclick' | 'mobile' | 'sheetbot' | 'filetosheet';
 
 type LandingHeaderProps = {
   activeNav?: LandingNavKey;

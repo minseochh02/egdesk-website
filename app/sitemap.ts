@@ -21,6 +21,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.85,
     },
     {
+      url: `${base}/mobile`,
+      priority: 0.85,
+    },
+    {
       url: `${base}/sheetbot`,
       priority: 0.85,
     },
