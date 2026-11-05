@@ -29,6 +29,12 @@ export default function LandingFooter() {
               <Link href="/internet-banking-ai">인터넷뱅킹AI</Link>
             </li>
             <li>
+              <Link href="/recorder">EGDesk Recorder</Link>
+            </li>
+            <li>
+              <Link href="/oneclick">원클릭로그인</Link>
+            </li>
+            <li>
               <Link href="/internet-banking-ai#contact">인터넷뱅킹AI 상담</Link>
             </li>
             <li>

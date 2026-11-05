@@ -2,17 +2,15 @@
 
 import Link from 'next/link';
 import '@/app/landing/landing.css';
-import BankingAIContactForm from './BankingAIContactForm';
 import EGDeskCollapseAnimation from './EGDeskCollapseAnimation';
 import LandingHeader from './LandingHeader';
 import LandingFooter from './LandingFooter';
 import LandingScrollHandler from './LandingScrollHandler';
+
+import LandingProductAppsGrid from './LandingProductAppsGrid';
 import { landingImage } from './landing-utils';
 
 const egdeskDownloadUrl = '/download/latest';
-const bankingAIDownloadUrl = '/download/internet-banking-ai/latest';
-const recorderDownloadUrl = '/download/recorder/latest';
-const oneclickDownloadUrl = '/download/oneclick/latest';
 
 const lineups = [
   {
@@ -213,101 +211,7 @@ export default function EgdeskLandingPage() {
         </div>
       </section>
 
-      <section id="banking-ai" className="section-band banking-ai-section">
-        <div className="page-container banking-ai-container">
-          <div className="banking-ai-copy">
-            <div className="banking-ai-heading-mark">
-              <img
-                src={landingImage('icon-banking.svg')}
-                alt="인터넷뱅킹AI 아이콘"
-                className="banking-ai-icon"
-              />
-              <span className="badge purple">Internet Banking AI</span>
-            </div>
-            <h2 className="section-title">
-              흩어진 금융 업무를
-              <br />
-              <span>인터넷뱅킹AI</span> 하나로 자동화
-            </h2>
-            <p className="section-subtitle">
-              소상공인 사장님과 경리 실무자를 위해 은행, 카드사, 국세청 홈택스 데이터를
-              자동으로 수집하고 엑셀로 정리하는 업무 자동화 솔루션입니다.
-            </p>
-            <div className="banking-ai-actions">
-              <a
-                href="https://youtu.be/j0zQy-XZ0rI"
-                className="btn-primary"
-                target="_blank"
-                rel="noreferrer"
-              >
-                실제 구동 데모 보기
-              </a>
-              <a href={bankingAIDownloadUrl} className="btn-secondary btn-download">
-                뱅킹AI 다운로드
-              </a>
-            </div>
-            <div className="banking-ai-extra-downloads" aria-label="기타 EGDesk 앱 다운로드">
-              <a href={recorderDownloadUrl} className="btn-tertiary btn-download">
-                Recorder 다운로드
-              </a>
-              <a href={oneclickDownloadUrl} className="btn-tertiary btn-download">
-                원클릭로그인 다운로드
-              </a>
-            </div>
-          </div>
-
-          <div className="banking-ai-panel glass-card">
-            <div className="banking-ai-panel-header">
-              <span className="banking-ai-status">Automation Suite</span>
-              <strong>[인터넷뱅킹AI] 핵심 기능</strong>
-            </div>
-            <div className="banking-ai-feature-grid">
-              <div className="banking-ai-feature">
-                <span className="banking-ai-feature-icon">01</span>
-                <div>
-                  <strong>동시 자동 로그인</strong>
-                  <p>은행, 카드사, 국세청 홈택스까지 버튼 하나로 접속합니다.</p>
-                </div>
-              </div>
-              <div className="banking-ai-feature">
-                <span className="banking-ai-feature-icon">02</span>
-                <div>
-                  <strong>엑셀 다운로드</strong>
-                  <p>필요한 금융 데이터를 자동으로 추출하고 엑셀 형태로 정리합니다.</p>
-                </div>
-              </div>
-              <div className="banking-ai-feature">
-                <span className="banking-ai-feature-icon">03</span>
-                <div>
-                  <strong>경리 반복 업무 절감</strong>
-                  <p>매번 흩어진 금융 데이터를 수집하고 정리하는 시간을 줄입니다.</p>
-                </div>
-              </div>
-            </div>
-            <div className="banking-ai-tags">
-              <span>#경리업무</span>
-              <span>#소상공인</span>
-              <span>#홈택스자동화</span>
-              <span>#엑셀다운로드</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="banking-contact" className="glass-card quote-section banking-contact-section">
-        <div className="section-title-wrap" style={{ marginBottom: '2.5rem' }}>
-          <span className="badge purple">Banking AI Inquiry</span>
-          <h2 className="section-title" style={{ fontSize: '2.2rem', marginBottom: '0.5rem' }}>
-            인터넷뱅킹AI 도입 상담
-          </h2>
-          <p className="section-subtitle">
-            인터넷뱅킹AI만 상담받고 싶은 경우 이곳에 연락처를 남겨 주세요. EGDESK AI_Server
-            하드웨어 견적과 분리해서 접수됩니다.
-          </p>
-        </div>
-
-        <BankingAIContactForm />
-      </section>
+      <LandingProductAppsGrid />
 
       <section id="lineups">
         <div className="section-title-wrap">

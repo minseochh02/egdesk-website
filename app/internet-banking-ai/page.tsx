@@ -7,8 +7,6 @@ import { landingImage } from '@/app/components/landing/landing-utils';
 
 const pageUrl = 'https://egdesk.cloud/internet-banking-ai';
 const latestDownloadUrl = '/download/internet-banking-ai/latest';
-const recorderDownloadUrl = '/download/recorder/latest';
-const oneclickDownloadUrl = '/download/oneclick/latest';
 
 export const metadata: Metadata = {
   title: '인터넷뱅킹AI | 은행·카드·홈택스 자동수집 | EGDesk',
@@ -144,14 +142,6 @@ export default function InternetBankingAIPage() {
             </a>
             <a href={latestDownloadUrl} className="btn-secondary btn-download">
               뱅킹AI 다운로드
-            </a>
-          </div>
-          <div className="banking-ai-extra-downloads" aria-label="기타 EGDesk 앱 다운로드">
-            <a href={recorderDownloadUrl} className="btn-tertiary btn-download">
-              Recorder 다운로드
-            </a>
-            <a href={oneclickDownloadUrl} className="btn-tertiary btn-download">
-              원클릭로그인 다운로드
             </a>
           </div>
         </div>

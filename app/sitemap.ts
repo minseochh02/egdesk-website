@@ -13,6 +13,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     {
+      url: `${base}/recorder`,
+      priority: 0.85,
+    },
+    {
+      url: `${base}/oneclick`,
+      priority: 0.85,
+    },
+    {
       url: `${base}/landing/detail`,
       priority: 0.8,
     },

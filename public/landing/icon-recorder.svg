@@ -1,0 +1,19 @@
+<svg width="1024" height="1024" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="rec-bg" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0%" stop-color="#2a1530"/>
+      <stop offset="100%" stop-color="#120818"/>
+    </linearGradient>
+    <clipPath id="rec-rounded">
+      <rect width="200" height="200" rx="46"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#rec-rounded)">
+    <rect width="200" height="200" fill="url(#rec-bg)"/>
+    <circle cx="100" cy="78" r="34" fill="#ef4444" opacity="0.95"/>
+    <circle cx="100" cy="78" r="16" fill="#fff"/>
+    <rect x="52" y="118" width="96" height="14" rx="7" fill="#EAEFFF" opacity="0.85"/>
+    <rect x="62" y="138" width="76" height="10" rx="5" fill="#A6B3CE" opacity="0.7"/>
+    <text x="100" y="168" text-anchor="middle" font-family="'SF Pro Display','Helvetica Neue',sans-serif" font-size="17" font-weight="700" fill="#EAEFFF" letter-spacing="0.5">Recorder</text>
+  </g>
+</svg>

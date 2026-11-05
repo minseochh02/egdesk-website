@@ -1,0 +1,19 @@
+<svg width="1024" height="1024" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="oc-bg" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0%" stop-color="#142038"/>
+      <stop offset="100%" stop-color="#0a1020"/>
+    </linearGradient>
+    <clipPath id="oc-rounded">
+      <rect width="200" height="200" rx="46"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#oc-rounded)">
+    <rect width="200" height="200" fill="url(#oc-bg)"/>
+    <path d="M58 118 L118 78 L142 98 L82 138 Z" fill="#4facfe"/>
+    <path d="M118 78 L142 58 L166 78 L142 98 Z" fill="#00f2fe"/>
+    <circle cx="72" cy="126" r="10" fill="#EAEFFF"/>
+    <text x="100" y="162" text-anchor="middle" font-family="'Apple SD Gothic Neo','Malgun Gothic',sans-serif" font-size="16" font-weight="700" fill="#EAEFFF">Ðt­</text>
+    <text x="100" y="182" text-anchor="middle" font-family="'Apple SD Gothic Neo','Malgun Gothic',sans-serif" font-size="14" font-weight="700" fill="#5FE6E6">\øx</text>
+  </g>
+</svg>

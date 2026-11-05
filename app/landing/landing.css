@@ -669,8 +669,161 @@
 }
 
 /* Internet Banking AI Section */
-.landing-page .banking-ai-section {
+.landing-page .banking-ai-section,
+.landing-page .product-app-landing-section {
     background: linear-gradient(180deg, rgba(155, 81, 224, 0.04) 0%, rgba(0, 242, 254, 0.02) 100%);
+}
+
+.landing-page .product-app-landing-section.product-app-theme--recorder {
+    background: linear-gradient(180deg, rgba(239, 68, 68, 0.06) 0%, rgba(155, 81, 224, 0.03) 100%);
+}
+
+.landing-page .product-app-landing-section.product-app-theme--oneclick {
+    background: linear-gradient(180deg, rgba(79, 172, 254, 0.07) 0%, rgba(0, 242, 254, 0.03) 100%);
+}
+
+.landing-page .product-app-theme--recorder .banking-ai-copy .section-title span {
+    background: linear-gradient(135deg, #f87171, #fb923c);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.landing-page .product-app-theme--oneclick .banking-ai-copy .section-title span {
+    background: linear-gradient(135deg, #38bdf8, #818cf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.landing-page .product-app-theme--recorder .hero-title span {
+    background: linear-gradient(135deg, #f87171, #fb923c);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.landing-page .product-app-theme--oneclick .hero-title span {
+    background: linear-gradient(135deg, #38bdf8, #818cf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.landing-page .egdesk-apps-section {
+    background: linear-gradient(180deg, rgba(155, 81, 224, 0.05) 0%, rgba(0, 0, 0, 0) 100%);
+}
+
+.landing-page .product-apps-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.landing-page .product-app-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1.75rem;
+    height: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    transition: var(--transition-smooth);
+}
+
+.landing-page .product-app-card:hover {
+    border-color: rgba(0, 242, 254, 0.25);
+    transform: translateY(-4px);
+}
+
+.landing-page .product-app-card__icon-wrap {
+    width: 72px;
+    height: 72px;
+    border-radius: 18px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+
+.landing-page .product-app-card__icon {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.landing-page .product-app-card__badge {
+    margin-bottom: 0.75rem;
+}
+
+.landing-page .product-app-card__name {
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.35rem;
+    line-height: 1.35;
+}
+
+.landing-page .product-app-card__headline {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #b8c5e0;
+    margin: 0 0 0.65rem;
+}
+
+.landing-page .product-app-card__desc {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.55;
+    margin: 0 0 1rem;
+    flex: 1;
+}
+
+.landing-page .product-app-card__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 1.25rem;
+}
+
+.landing-page .product-app-card__tags span {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #94a3b8;
+}
+
+.landing-page .product-app-card__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    width: 100%;
+}
+
+.landing-page .product-app-card__link {
+    text-align: center;
+    width: 100%;
+}
+
+.landing-page .product-app-card__actions .btn-download {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+}
+
+.landing-page .product-app-theme--banking .product-app-card__headline {
+    color: #c4b5fd;
+}
+
+.landing-page .product-app-theme--recorder .product-app-card__headline {
+    color: #fca5a5;
+}
+
+.landing-page .product-app-theme--oneclick .product-app-card__headline {
+    color: #7dd3fc;
+}
+
+@media (max-width: 960px) {
+    .landing-page .product-apps-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .landing-page .banking-ai-container {
