@@ -23,12 +23,24 @@ export default function LandingProductAppsGrid() {
               key={app.id}
               className={`glass-card product-app-card ${app.themeClass}`}
             >
-              <div className="product-app-card__icon-wrap">
-                <img
-                  src={landingImage(app.iconFile)}
-                  alt=""
-                  className="product-app-card__icon"
-                />
+              <div className="product-app-card__icon-row">
+                <div className="product-app-card__icon-wrap">
+                  <img
+                    src={landingImage(app.iconFile)}
+                    alt=""
+                    className="product-app-card__icon"
+                  />
+                </div>
+                {app.id === 'sheetbot' && app.secondaryDownloadUrl ? (
+                  <SheetBotAgentApkQr
+                    variant="inline"
+                    installUrl={
+                      app.secondaryDownloadUrl.startsWith('http')
+                        ? app.secondaryDownloadUrl
+                        : canonicalPath(app.secondaryDownloadUrl)
+                    }
+                  />
+                ) : null}
               </div>
               <span className="badge purple product-app-card__badge">{app.badge}</span>
               <h3 className="product-app-card__name">{app.name}</h3>
@@ -62,15 +74,6 @@ export default function LandingProductAppsGrid() {
                   >
                     {app.secondaryDownloadLabel}
                   </a>
-                ) : null}
-                {app.id === 'sheetbot' && app.secondaryDownloadUrl ? (
-                  <SheetBotAgentApkQr
-                    installUrl={
-                      app.secondaryDownloadUrl.startsWith('http')
-                        ? app.secondaryDownloadUrl
-                        : canonicalPath(app.secondaryDownloadUrl)
-                    }
-                  />
                 ) : null}
               </div>
             </article>
