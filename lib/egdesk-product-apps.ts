@@ -174,6 +174,8 @@ export type LandingProductCardConfig = {
   pagePath: string;
   downloadUrl: string;
   downloadLabel: string;
+  secondaryDownloadUrl?: string;
+  secondaryDownloadLabel?: string;
   iconFile: string;
   badge: string;
   name: string;
@@ -189,6 +191,8 @@ function productToLandingCard(config: EgdeskProductAppConfig): LandingProductCar
     pagePath: `/${config.slug}`,
     downloadUrl: config.downloadUrl,
     downloadLabel: config.downloadLabel,
+    secondaryDownloadUrl: config.secondaryDownloadUrl,
+    secondaryDownloadLabel: config.secondaryDownloadLabel,
     iconFile: config.iconFile,
     badge: config.badge,
     name: config.softwareName,
@@ -220,6 +224,8 @@ export const SHEETBOT_PRODUCT: EgdeskProductAppConfig = {
   pageUrl: 'https://egdesk.cloud/sheetbot',
   downloadUrl: 'https://sheetbot.cloud',
   downloadLabel: 'sheetbot.cloud 시작하기',
+  secondaryDownloadUrl: '/download/sheetbot-agent/latest',
+  secondaryDownloadLabel: '에이전트 APK 다운로드',
   externalPrimary: true,
   iconFile: 'icon-sheetbot.svg',
   badge: 'SheetBot · sheetbot.cloud',
@@ -283,7 +289,7 @@ export const SHEETBOT_PRODUCT: EgdeskProductAppConfig = {
     {
       question: '모바일 에이전트 APK는 어디서 받나요?',
       answer:
-        'sheetbot.cloud 대시보드의 에이전트 메뉴에서 QR·다운로드 안내를 확인하세요. 버전은 서버 API로 배포됩니다.',
+        'egdesk.cloud/sheetbot에서 최신 SheetBotAgent.apk로 연결되는 링크를 사용하거나, sheetbot.cloud 대시보드의 에이전트 메뉴에서 QR·다운로드 안내를 확인하세요.',
     },
     {
       question: 'FileToSheet와 관계는?',

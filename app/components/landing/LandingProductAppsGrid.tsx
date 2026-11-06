@@ -50,6 +50,17 @@ export default function LandingProductAppsGrid() {
                 >
                   {app.downloadLabel}
                 </a>
+                {app.secondaryDownloadUrl && app.secondaryDownloadLabel ? (
+                  <a
+                    href={app.secondaryDownloadUrl}
+                    className="btn-secondary btn-download"
+                    {...(app.secondaryDownloadUrl.startsWith('http')
+                      ? { target: '_blank', rel: 'noreferrer' }
+                      : {})}
+                  >
+                    {app.secondaryDownloadLabel}
+                  </a>
+                ) : null}
               </div>
             </article>
           ))}

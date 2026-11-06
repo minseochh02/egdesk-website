@@ -12,6 +12,9 @@ export type EgdeskProductAppConfig = {
   pageUrl: string;
   downloadUrl: string;
   downloadLabel: string;
+  /** Optional second action (e.g. APK) shown under the primary hero CTAs. */
+  secondaryDownloadUrl?: string;
+  secondaryDownloadLabel?: string;
   /** When true, primary CTA opens `downloadUrl` in a new tab (cloud products). */
   externalPrimary?: boolean;
   iconFile: string;
@@ -54,6 +57,9 @@ type EgdeskProductAppPageProps = {
 };
 
 export default function EgdeskProductAppPage({ config }: EgdeskProductAppPageProps) {
+  const secondaryIsExternal =
+    config.secondaryDownloadUrl?.startsWith('http') ?? false;
+
   const softwareApplication = {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
@@ -116,6 +122,17 @@ export default function EgdeskProductAppPage({ config }: EgdeskProductAppPagePro
               EGDesk 제품 목록
             </Link>
           </div>
+          {config.secondaryDownloadUrl && config.secondaryDownloadLabel ? (
+            <div className="banking-ai-extra-downloads hero-extra-downloads">
+              <a
+                href={config.secondaryDownloadUrl}
+                className="btn-tertiary btn-download"
+                {...(secondaryIsExternal ? { target: '_blank', rel: 'noreferrer' } : {})}
+              >
+                {config.secondaryDownloadLabel}
+              </a>
+            </div>
+          ) : null}
         </div>
         <div className="banking-product-summary glass-card">
           <span className="banking-ai-status">{config.summaryLabel}</span>
