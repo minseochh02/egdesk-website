@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { LANDING_EGDESK_APP_CARDS } from '@/lib/egdesk-product-apps';
 import { landingImage } from '@/app/components/landing/landing-utils';
+import { canonicalPath } from '@/lib/site';
+import SheetBotAgentApkQr from '@/app/components/landing/SheetBotAgentApkQr';
 
 export default function LandingProductAppsGrid() {
   return (
@@ -60,6 +62,15 @@ export default function LandingProductAppsGrid() {
                   >
                     {app.secondaryDownloadLabel}
                   </a>
+                ) : null}
+                {app.id === 'sheetbot' && app.secondaryDownloadUrl ? (
+                  <SheetBotAgentApkQr
+                    installUrl={
+                      app.secondaryDownloadUrl.startsWith('http')
+                        ? app.secondaryDownloadUrl
+                        : canonicalPath(app.secondaryDownloadUrl)
+                    }
+                  />
                 ) : null}
               </div>
             </article>
