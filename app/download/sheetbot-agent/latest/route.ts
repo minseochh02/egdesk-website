@@ -12,5 +12,6 @@ export async function GET() {
     apiUrl: latestReleaseApiUrl,
     fallbackUrl: fallbackApkUrl,
     preferApk: true,
+    apkAssetName: 'SheetBotAgent.apk',
   });
 }

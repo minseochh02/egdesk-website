@@ -32,8 +32,29 @@ function githubRequestHeaders(): HeadersInit {
   return headers;
 }
 
-function selectDownloadAsset(assets: GitHubReleaseAsset[] = [], preferApk = false) {
-  if (preferApk) {
+type ApkAssetSelection = {
+  preferApk?: boolean;
+  /** When set, match this release asset filename (case-insensitive) before any other APK. */
+  apkAssetName?: string;
+};
+
+function selectDownloadAsset(
+  assets: GitHubReleaseAsset[] = [],
+  apkSelection: ApkAssetSelection = {},
+) {
+  const { preferApk, apkAssetName } = apkSelection;
+  if (preferApk || apkAssetName) {
+    if (apkAssetName) {
+      const target = apkAssetName.toLowerCase();
+      const namedApk = assets.find(
+        (asset) =>
+          asset.name?.toLowerCase() === target &&
+          !ignoredAssetPattern.test(asset.name) &&
+          Boolean(asset.browser_download_url),
+      );
+      if (namedApk) return namedApk;
+    }
+
     const apkAsset = assets.find(
       (asset) =>
         apkAssetPattern.test(asset.name) &&
@@ -56,9 +77,9 @@ function selectDownloadAsset(assets: GitHubReleaseAsset[] = [], preferApk = fals
 
 function downloadUrlFromRelease(
   release: GitHubRelease | null | undefined,
-  preferApk = false,
+  apkSelection: ApkAssetSelection = {},
 ): string | undefined {
-  return selectDownloadAsset(release?.assets, preferApk)?.browser_download_url;
+  return selectDownloadAsset(release?.assets, apkSelection)?.browser_download_url;
 }
 
 async function fetchGitHubJson<T>(url: string): Promise<T | null> {
@@ -73,10 +94,10 @@ async function fetchGitHubJson<T>(url: string): Promise<T | null> {
 /** Prefer GitHub "latest", but fall back to the newest stable release that has a matching asset. */
 async function resolveLatestInstallerDownloadUrl(
   apiLatestUrl: string,
-  preferApk = false,
+  apkSelection: ApkAssetSelection = {},
 ): Promise<string | null> {
   const latest = await fetchGitHubJson<GitHubRelease>(apiLatestUrl);
-  const fromLatest = downloadUrlFromRelease(latest, preferApk);
+  const fromLatest = downloadUrlFromRelease(latest, apkSelection);
   if (fromLatest) return fromLatest;
 
   const listUrl = apiLatestUrl.replace(/\/releases\/latest$/u, '/releases?per_page=30');
@@ -85,25 +106,26 @@ async function resolveLatestInstallerDownloadUrl(
 
   for (const release of releases) {
     if (release.draft || release.prerelease) continue;
-    const url = downloadUrlFromRelease(release, preferApk);
+    const url = downloadUrlFromRelease(release, apkSelection);
     if (url) return url;
   }
 
   return null;
 }
 
-type RedirectLatestReleaseOptions = LatestReleaseConfig & {
-  /** When set, pick a `.apk` from release assets before desktop installers. */
-  preferApk?: boolean;
-};
+type RedirectLatestReleaseOptions = LatestReleaseConfig & ApkAssetSelection;
 
 export async function redirectToLatestReleaseAsset({
   apiUrl,
   fallbackUrl,
   preferApk,
+  apkAssetName,
 }: RedirectLatestReleaseOptions) {
   try {
-    const downloadUrl = await resolveLatestInstallerDownloadUrl(apiUrl, preferApk);
+    const downloadUrl = await resolveLatestInstallerDownloadUrl(apiUrl, {
+      preferApk,
+      apkAssetName,
+    });
     return NextResponse.redirect(downloadUrl ?? fallbackUrl);
   } catch {
     return NextResponse.redirect(fallbackUrl);
